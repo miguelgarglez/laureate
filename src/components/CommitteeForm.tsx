@@ -39,12 +39,24 @@ export function CommitteeForm(p: Props) {
           className="ach-input"
           value={p.achievement}
           onChange={(e) => p.setAchievement(e.target.value)}
-          placeholder={`for ${GHOST_EXAMPLES[ghost]}`}
+          placeholder="name the deed"
           maxLength={140}
           autoComplete="off"
           enterKeyHint="done"
         />
       </label>
+      {!p.achievement && (
+        <p className="petition-note">
+          e.g.{' '}
+          <button
+            type="button"
+            className="note-example"
+            onClick={() => p.setAchievement(GHOST_EXAMPLES[ghost])}
+          >
+            “{GHOST_EXAMPLES[ghost]}”
+          </button>
+        </p>
+      )}
       <label className="field field-who">
         <span className="field-tag">Conferred upon</span>
         <input
@@ -58,12 +70,12 @@ export function CommitteeForm(p: Props) {
       </label>
       <fieldset className="seal-field" data-guide="category">
         <legend className="field-tag">The field of merit</legend>
-        <div className="seal-row">
+        <div className="seal-grid">
           {CATEGORY_ORDER.map((c) => (
             <button
               key={c}
               type="button"
-              className={`seal ${p.category === c ? 'seal-on' : ''}`}
+              className={`seal-cell ${p.category === c ? 'seal-on' : ''}`}
               aria-pressed={p.category === c}
               title={`${CATEGORIES[c].label} — ${CATEGORIES[c].motto}`}
               onClick={() => {
@@ -71,7 +83,10 @@ export function CommitteeForm(p: Props) {
                 tick(p.soundOn)
               }}
             >
-              <span className="seal-face">{CATEGORIES[c].label}</span>
+              <span className="seal">
+                <span className="seal-face">{CATEGORIES[c].label.slice(0, 2)}</span>
+              </span>
+              <span className="seal-name">{CATEGORIES[c].label}</span>
             </button>
           ))}
         </div>
@@ -79,7 +94,9 @@ export function CommitteeForm(p: Props) {
       <button className="press" data-guide="mint" type="submit" disabled={!ready || p.busy}>
         <span className="press-face">Mint the medal</span>
       </button>
-      {!ready && <p className="hint">The Committee requires an achievement — a few words will do.</p>}
+      {!ready && p.achievement.length > 0 && (
+        <p className="hint">A few more words — the Committee requires a real deed.</p>
+      )}
     </form>
   )
 }

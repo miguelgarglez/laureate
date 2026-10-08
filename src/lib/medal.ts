@@ -320,7 +320,9 @@ function renderBack(award: Award, size: number): HTMLCanvasElement {
   ctx.fillText('AWARDED TO', 0, -r * 0.34)
   ctx.font = `italic ${size * 0.075}px "EB Garamond", serif`
   const who = award.recipient || 'the bearer'
-  ctx.fillText(who.length > 24 ? who.slice(0, 24) + '…' : who, 0, -r * 0.14)
+  const whoFit = Math.min(1, (r * 0.78) / ctx.measureText(who).width)
+  ctx.font = `italic ${size * 0.075 * whoFit}px "EB Garamond", serif`
+  ctx.fillText(who.length > 34 ? who.slice(0, 34) + '…' : who, 0, -r * 0.14)
   ctx.strokeStyle = GOLD_DEEP
   ctx.lineWidth = size * 0.004
   ctx.beginPath()
@@ -385,6 +387,25 @@ export class MedalRenderer {
       ctx.restore()
       return
     }
+
+    // edge thickness: a dark elliptical rim band just wider than the face
+    const edgeT = r * 0.055 + r * facing * 0.01
+    const eg2 = ctx.createLinearGradient(-(r * facing + edgeT), 0, r * facing + edgeT, 0)
+    eg2.addColorStop(0, '#4d3a0c')
+    eg2.addColorStop(0.5, '#8a6d1e')
+    eg2.addColorStop(1, '#4d3a0c')
+    ctx.fillStyle = eg2
+    ctx.beginPath()
+    ctx.ellipse(0, 0, r * facing + edgeT, r, 0, 0, Math.PI * 2)
+    ctx.fill()
+    // faint ridges on the milled edge
+    ctx.save()
+    ctx.strokeStyle = 'rgba(30,22,5,0.35)'
+    ctx.lineWidth = size * 0.004
+    ctx.beginPath()
+    ctx.ellipse(0, 0, r * facing + edgeT * 0.72, r * 0.99, 0, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.restore()
 
     ctx.scale(facing, 1)
 

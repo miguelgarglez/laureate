@@ -31,6 +31,7 @@ export function Diploma({ award, animate }: { award: Award; animate: boolean }) 
           <span>Medal No. {award.serial}</span>
           <span className="dip-date">Given under seal, {ceremonyDate(award.dateISO)}</span>
         </footer>
+        <p className="dip-colophon">Struck locally — no committee was contacted.</p>
         <div className="wax-seal" aria-hidden="true">
           <span>LC</span>
         </div>

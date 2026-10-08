@@ -6,12 +6,10 @@ import type { StagePhase } from './components/MedalStage'
 import { CommitteeForm } from './components/CommitteeForm'
 import { Diploma } from './components/Diploma'
 import { ShareBar } from './components/ShareBar'
-import { Guide } from './components/Guide'
-import { guideSeen, markGuideSeen } from './lib/guide'
 import { renderCard } from './lib/sharecard'
 import { shimmer, thunk } from './lib/sfx'
 
-const STRIKE_MS = 1700
+const STRIKE_MS = 1900
 
 const soundPref = () => {
   try {
@@ -60,8 +58,8 @@ export default function App() {
   const [category, setCategory] = useState<Category>('peace')
   const [strikeKey, setStrikeKey] = useState(0)
   const [flipNudge, setFlipNudge] = useState(0)
+  const [hintDone, setHintDone] = useState(false)
   const [soundOn, setSoundOn] = useState(soundPref)
-  const [showGuide, setShowGuide] = useState(() => !guideSeen())
   const [reduced, setReduced] = useState(
     () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches,
   )
@@ -108,10 +106,10 @@ export default function App() {
 
   useEffect(() => () => clearTimeout(ceremonyTimer.current), [])
 
-  // FLIP the medal when the layout swaps columns on award
+  // FLIP the medal when the layout shifts on award — desktop only
   useEffect(() => {
     const el = stageRef.current
-    if (!el || !flipFrom.current || reduced) return
+    if (!el || !flipFrom.current || reduced || window.innerWidth < 980) return
     const now = el.getBoundingClientRect()
     const from = flipFrom.current
     flipFrom.current = null
@@ -144,9 +142,8 @@ export default function App() {
     setPhase('striking')
     setStrikeKey((k) => k + 1)
     setFlipNudge(0)
+    setHintDone(false)
     history.replaceState(null, '', '#a=' + encodeAward(a))
-    setShowGuide(false)
-    markGuideSeen()
     ceremonyTimer.current = window.setTimeout(() => {
       flipFrom.current = stageRef.current?.getBoundingClientRect() ?? null
       setPhase('awarded')
@@ -179,8 +176,6 @@ export default function App() {
     } catch { /* private */ }
   }
 
-  const guideStep = showGuide ? (achievement.trim().length >= 3 ? 1 : 0) : 2
-
   const statusText =
     phase === 'striking'
       ? 'The press is striking your medal.'
@@ -194,7 +189,9 @@ export default function App() {
     <div className={`scene phase-${phase}`}>
       <header className="masthead">
         <h1>Laureate</h1>
-        <p className="sub">The Committee for Extremely Specific Achievement</p>
+        <p className="sub">
+          Award someone a gold medal for something gloriously minor.
+        </p>
       </header>
 
       <p className="vh" aria-live="polite">
@@ -203,18 +200,20 @@ export default function App() {
 
       <main className="main">
         <div className="stage-col" ref={stageRef}>
-          <div className={`ribbon-drop ${phase === 'awarded' ? 'ribbon-on' : ''}`} aria-hidden="true" />
           <MedalStage
             award={award}
             phase={phase}
             strikeKey={strikeKey}
             flipNudge={flipNudge}
             onStrikeMoment={onContact}
+            onFirstFlip={() => setHintDone(true)}
             reducedMotion={reduced}
           />
           {phase === 'awarded' && (
             <div className="stage-hints">
-              {!reduced && <p className="drag-hint">The medal takes a spin — drag it.</p>}
+              {!hintDone && !reduced && (
+                <p className="drag-hint">The medal takes a spin — drag it.</p>
+              )}
               <button
                 className="slink slink-dim flip-btn"
                 onClick={() => setFlipNudge((n) => n + 1)}
@@ -266,36 +265,15 @@ export default function App() {
       </main>
 
       <footer className="foot">
-        <span>Struck locally — no committee was contacted.</span>
-      </footer>
-
-      <div className="foot-utils">
         <button
           className="util"
           onClick={toggleSound}
           aria-pressed={soundOn}
           title={soundOn ? 'Sound off' : 'Sound on'}
         >
-          {soundOn ? 'Sound on' : 'Sound off'}
+          {soundOn ? 'sound on' : 'sound off'}
         </button>
-        <button
-          className="util"
-          onClick={() => setShowGuide(true)}
-          title="Replay the first steps"
-        >
-          ?
-        </button>
-      </div>
-
-      {guideStep < 2 && !badHash && (
-        <Guide
-          step={guideStep as 0 | 1}
-          onSkip={() => {
-            setShowGuide(false)
-            markGuideSeen()
-          }}
-        />
-      )}
+      </footer>
     </div>
   )
 }

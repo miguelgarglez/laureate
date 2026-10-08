@@ -62,18 +62,22 @@ export function ShareBar({ award, onReset }: { award: Award; onReset: () => void
     copied === 'fail' ? 'Couldn’t copy' : copied === k ? done : base
 
   return (
-    <div className="sharebar" role="toolbar" aria-label="Share the award">
-      <button className="slink" onClick={() => void downloadCard(award)}>
-        Download the card
-      </button>
-      <button className="slink" onClick={copyCitation}>
-        {label('citation', 'Copy the citation', 'Citation copied')}
-      </button>
-      <button className="slink" onClick={share}>
-        {label('link', 'Share', 'Link copied')}
-      </button>
-      <button className="slink slink-dim" onClick={onReset}>
-        Mint another
+    <div className="dispatch">
+      <div className="dispatch-row" role="toolbar" aria-label="Share the award">
+        <button className="dispatch-tab" onClick={() => void downloadCard(award)}>
+          Save the card
+        </button>
+        <span className="dispatch-sep" aria-hidden="true">·</span>
+        <button className="dlink" onClick={share}>
+          {label('link', 'copy the link', 'link copied')}
+        </button>
+        <span className="dispatch-sep" aria-hidden="true">·</span>
+        <button className="dlink" onClick={copyCitation}>
+          {label('citation', 'copy the citation', 'citation copied')}
+        </button>
+      </div>
+      <button className="dlink dlink-quiet" onClick={onReset}>
+        mint another
       </button>
       <span className="vh" role="status">
         {notice}
