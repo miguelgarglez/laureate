@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { decodeAward, encodeAward, mint } from './lib/award'
 import type { Award, Category } from './lib/award'
 import { MedalStage } from './components/MedalStage'
@@ -66,7 +66,7 @@ export default function App() {
   const stageRef = useRef<HTMLDivElement>(null)
   const sideRef = useRef<HTMLDivElement>(null)
   const flipFrom = useRef<DOMRect | null>(null)
-  const ghostFrom = useRef<DOMRect | null>(null)
+  const ghostFrom = useRef<{ cx: number; cy: number; w: number; h: number } | null>(null)
   const ceremonyTimer = useRef<number>(0)
   // one ceremony at a time: a generation counter rejects orphan callbacks,
   // and a synchronous ref blocks a second submit in the same event turn
@@ -147,40 +147,39 @@ export default function App() {
 
   // move focus to the outcome once the diploma has actually unfurled,
   // and retire the petition ghost once the paper reveal covers it
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (phase !== 'awarded') return
-    // pin the ghost to the diploma's exact box, seed its clip variables,
-    // and travel it from the petition's measured rect to that box
-    const raf = requestAnimationFrame(() => {
-      const dip = sideRef.current?.querySelector<HTMLElement>('.diploma')
-      const ghost = sideRef.current?.querySelector<HTMLElement>('.docket-ghost')
-      if (dip && ghost && sideRef.current) {
-        ghost.style.left = `${dip.offsetLeft}px`
-        ghost.style.width = `${dip.offsetWidth}px`
-        sideRef.current.style.setProperty('--dip-h', `${dip.offsetHeight}px`)
-        sideRef.current.style.setProperty('--ghost-h', `${ghost.offsetHeight}px`)
-        sideRef.current.style.setProperty(
-          '--ghost-clip',
-          `${Math.max(0, ghost.offsetHeight - dip.offsetHeight)}px`,
-        )
-      }
-      const from = ghostFrom.current
-      ghostFrom.current = null
-      if (ghost && from && !reduced) {
-        const now = ghost.getBoundingClientRect()
-        const dx = from.left + from.width / 2 - (now.left + now.width / 2)
-        const dy = from.top + from.height / 2 - (now.top + now.height / 2)
-        const sx = from.width / now.width
-        const sy = from.height / now.height
-        ghost.style.transformOrigin = '50% 50%'
-        ghost.style.transition = 'none'
-        ghost.style.transform = `translate(${dx}px,${dy}px) scale(${sx},${sy})`
-        requestAnimationFrame(() => {
-          ghost.style.transition = 'transform 480ms cubic-bezier(0.32, 0.72, 0, 1)'
-          ghost.style.transform = 'none'
-        })
-      }
-    })
+    // pin the ghost to the diploma's exact box and travel it from the
+    // petition's measured rect — all before first paint, so the paper
+    // never flashes at its destination and snaps back
+    const dip = sideRef.current?.querySelector<HTMLElement>('.diploma')
+    const ghost = sideRef.current?.querySelector<HTMLElement>('.docket-ghost')
+    if (dip && ghost && sideRef.current) {
+      ghost.style.left = `${dip.offsetLeft}px`
+      ghost.style.width = `${dip.offsetWidth}px`
+      sideRef.current.style.setProperty('--dip-h', `${dip.offsetHeight}px`)
+      sideRef.current.style.setProperty('--ghost-h', `${ghost.offsetHeight}px`)
+      sideRef.current.style.setProperty(
+        '--ghost-clip',
+        `${Math.max(0, ghost.offsetHeight - dip.offsetHeight)}px`,
+      )
+    }
+    const from = ghostFrom.current
+    ghostFrom.current = null
+    if (ghost && from && !reduced) {
+      const now = ghost.getBoundingClientRect()
+      const dx = from.cx - (now.left + now.width / 2)
+      const dy = from.cy - (now.top + now.height / 2)
+      const sx = from.w / ghost.offsetWidth
+      const sy = from.h / ghost.offsetHeight
+      ghost.style.transformOrigin = '50% 50%'
+      ghost.style.transition = 'none'
+      ghost.style.transform = `translate(${dx}px,${dy}px) scale(${sx},${sy})`
+      requestAnimationFrame(() => {
+        ghost.style.transition = 'transform 480ms cubic-bezier(0.32, 0.72, 0, 1)'
+        ghost.style.transform = ''
+      })
+    }
     const focusT = setTimeout(
       () =>
         document
@@ -190,7 +189,6 @@ export default function App() {
     )
     const ghostT = setTimeout(() => setPaperGone(true), reduced ? 300 : 1500)
     return () => {
-      cancelAnimationFrame(raf)
       clearTimeout(focusT)
       clearTimeout(ghostT)
     }
@@ -222,10 +220,19 @@ export default function App() {
         mintBusy.current = false
         setPending(false)
         flipFrom.current = stageRef.current?.getBoundingClientRect() ?? null
-        // the petition must not teleport: remember its screen rect so the
-        // ghost can hold that position and travel into the diploma slot
-        ghostFrom.current =
-          document.querySelector<HTMLElement>('.petition')?.getBoundingClientRect() ?? null
+        // the petition must not teleport: remember its screen center and
+        // unrotated size so the ghost's first painted corners land exactly
+        // on the petition's last striking corners
+        const pet = document.querySelector<HTMLElement>('.petition')
+        if (pet) {
+          const r = pet.getBoundingClientRect()
+          ghostFrom.current = {
+            cx: r.left + r.width / 2,
+            cy: r.top + r.height / 2,
+            w: pet.offsetWidth,
+            h: pet.offsetHeight,
+          }
+        }
         setPhase('awarded')
         shimmer(soundPref())
       }, reduced ? 300 : STRIKE_MS)

@@ -222,15 +222,19 @@ button { font-family: inherit; }
   opacity: 0.3;
   transform: translateY(3px);
   pointer-events: none;
-}
-.docket-ghost-paper {
-  transform-origin: 50% 0;
+  /* clip lives on this unscaled wrapper: after the FLIP release it has
+     no transform, so the pixel insets are true screen-space edges and
+     the visible lower boundary tracks the roll exactly */
   animation:
-    ghost-gather 150ms ease-in 395ms both,
     ghost-tuck 800ms var(--ease-drawer) 550ms forwards,
     ghost-away 340ms ease 1180ms forwards;
 }
-/* the sheet rolls up into the scroll's start point just before it opens */
+.docket-ghost-paper {
+  transform-origin: 50% 0;
+  /* the sheet rolls up into the scroll's start point just before it opens;
+     gather runs on this inner element, clip on the unscaled wrapper */
+  animation: ghost-gather 150ms ease-in 395ms both;
+}
 @keyframes ghost-gather {
   to { transform: scaleY(0.04); }
 }
