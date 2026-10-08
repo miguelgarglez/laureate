@@ -101,21 +101,25 @@ button { font-family: inherit; }
   width: 100%;
 }
 
-/* petition left, press right — the paperwork feeds the mint */
+/* petition left, press right — the paperwork feeds the mint;
+   once struck, the medal stays on the bench and the diploma lands beside it */
 @media (min-width: 981px) {
   .phase-idle .main,
-  .phase-striking .main {
+  .phase-striking .main,
+  .phase-awarded .main {
     flex-direction: row;
     gap: clamp(28px, 4vw, 68px);
   }
   .phase-idle .side-col,
   .phase-striking .side-col { order: -1; }
+  .phase-awarded .side-col { max-width: 560px; }
 }
 
 .stage-col {
   position: relative;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   transition: transform 620ms var(--ease-drawer);
 }
 
@@ -130,23 +134,23 @@ button { font-family: inherit; }
 .medal-stage:active { cursor: grabbing; }
 .medal-stage canvas { width: 100%; height: 100%; display: block; }
 
-.phase-awarded .medal-stage { width: min(44vmin, 340px); }
+.phase-awarded .medal-stage { width: min(44vmin, 360px); }
 
 .stage-hints {
-  /* first row of the side column — lands on the baize between bed and parchment */
+  /* in-flow beneath the canvas — an inscription plate on the baize */
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 14px;
   min-height: 38px;
-  margin-bottom: 6px;
+  margin-top: -4px;
   z-index: 5;
 }
 .drag-hint {
   font-family: 'IM Fell English', serif;
   font-style: italic;
-  font-size: 15px;
-  color: rgba(240, 230, 205, 0.6);
+  font-size: 16px;
+  color: rgba(240, 230, 205, 0.68);
   animation: fade-up 500ms var(--ease-out) 1.2s both;
 }
 .flip-btn {
@@ -173,8 +177,6 @@ button { font-family: inherit; }
   align-items: center;
 }
 .phase-awarded .side-col {
-  /* rises just enough to meet the anvil's edge */
-  margin-top: -12px;
   transform: rotate(-0.5deg);
   z-index: 0;
 }
@@ -305,6 +307,7 @@ button { font-family: inherit; }
   border-radius: 50%;
   display: grid;
   place-items: center;
+  position: relative;
   color: #f5e3d0;
   background: radial-gradient(circle at 36% 28%, var(--wax-hi), var(--wax) 58%, #571a1c 100%);
   box-shadow:
@@ -312,6 +315,22 @@ button { font-family: inherit; }
     inset 0 -4px 8px rgba(0, 0, 0, 0.35),
     inset 0 2px 3px rgba(255, 220, 190, 0.25);
   transition: transform 160ms var(--ease-out), filter 160ms ease, box-shadow 160ms ease;
+}
+/* poured wax is never perfectly round */
+.seal-cell:nth-child(3n + 1) .seal { border-radius: 47% 53% 51% 49% / 52% 46% 54% 48%; }
+.seal-cell:nth-child(3n + 2) .seal { border-radius: 53% 47% 49% 51% / 47% 53% 46% 54%; }
+.seal-cell:nth-child(3n) .seal { border-radius: 50% 46% 54% 48% / 49% 52% 48% 52%; }
+/* a stray drip off the edge */
+.seal::after {
+  content: '';
+  position: absolute;
+  width: 24%;
+  height: 19%;
+  left: -7%;
+  top: 62%;
+  border-radius: 60% 40% 55% 45% / 55% 60% 40% 45%;
+  background: radial-gradient(circle at 40% 30%, var(--wax), #5c1a1c 90%);
+  box-shadow: 0 2px 5px rgba(60, 15, 15, 0.35);
 }
 .seal-face {
   font-family: 'IM Fell English SC', serif;
@@ -329,17 +348,28 @@ button { font-family: inherit; }
 .seal-cell:hover .seal { transform: translateY(-3px); }
 .seal-cell:active .seal { transform: scale(0.93); }
 .seal-on .seal {
-  transform: translateY(1px) scale(0.94);
-  filter: brightness(1.08);
+  /* stamped down: deeper impression, an ink bruise around the edge */
+  transform: translateY(2px) scale(0.9);
+  filter: brightness(0.88) saturate(1.15);
   box-shadow:
-    0 0 0 3px rgba(201, 162, 39, 0.65),
-    inset 0 3px 7px rgba(0, 0, 0, 0.5),
-    inset 0 -1px 2px rgba(255, 220, 190, 0.2),
-    0 1px 4px rgba(60, 15, 15, 0.35);
+    inset 0 5px 11px rgba(0, 0, 0, 0.6),
+    inset 0 -1px 2px rgba(255, 220, 190, 0.15),
+    0 0 0 3px rgba(109, 31, 31, 0.35),
+    0 1px 3px rgba(60, 15, 15, 0.3);
 }
+.seal-on .seal-face { text-shadow: 0 -1px 2px rgba(0, 0, 0, 0.65), 0 1px 0 rgba(255, 220, 190, 0.15); }
 .seal-on .seal-name {
   color: var(--wax);
   font-weight: 600;
+}
+.seal-explainer {
+  font-family: 'IM Fell English', serif;
+  font-style: italic;
+  font-size: 12.5px;
+  text-align: center;
+  color: rgba(107, 83, 32, 0.82);
+  margin-top: 9px;
+  min-height: 1.3em;
 }
 
 .press {
@@ -347,40 +377,50 @@ button { font-family: inherit; }
   font-size: clamp(17px, 1.9vw, 21px);
   letter-spacing: 0.28em;
   padding: 15px 18px;
-  background: linear-gradient(180deg, #e0bd66, var(--gold) 45%, #96771f);
-  color: #241a05;
-  border: none;
+  background: linear-gradient(180deg, #565b64, #2e3136 55%, #191b1e);
+  color: var(--gold-hi);
+  border: 1px solid rgba(200, 206, 216, 0.22);
   border-radius: 3px;
   cursor: pointer;
-  box-shadow: 0 4px 0 #4a3809, 0 10px 24px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(200, 206, 216, 0.3),
+    0 4px 0 #0d0e10,
+    0 10px 24px rgba(0, 0, 0, 0.4);
   transition: transform 120ms var(--ease-out), box-shadow 120ms var(--ease-out);
-  text-shadow: 0 1px 0 rgba(255, 240, 200, 0.4);
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.7), 0 0 14px rgba(236, 207, 125, 0.25);
   margin-top: 2px;
 }
 .press:hover:not(:disabled) {
   transform: translateY(-3px);
-  box-shadow: 0 7px 0 #4a3809, 0 14px 28px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(200, 206, 216, 0.35),
+    0 7px 0 #0d0e10,
+    0 14px 28px rgba(0, 0, 0, 0.4);
 }
 .press:active:not(:disabled) {
   transform: translateY(2px);
-  box-shadow: 0 1px 0 #4a3809, 0 3px 10px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(200, 206, 216, 0.2),
+    0 1px 0 #0d0e10,
+    0 3px 10px rgba(0, 0, 0, 0.3);
 }
 .press:disabled { opacity: 0.4; cursor: default; }
 
 .docket-sound {
-  font-family: 'IM Fell English', serif;
-  font-style: italic;
+  font-family: 'IM Fell English SC', serif;
   font-size: 13.5px;
-  color: rgba(107, 83, 32, 0.75);
-  background: none;
-  border: none;
-  border-bottom: 1px dotted rgba(107, 83, 32, 0.4);
-  padding: 4px 2px;
-  margin: -4px auto 0;
+  letter-spacing: 0.12em;
+  color: rgba(77, 60, 24, 0.95);
+  background: rgba(240, 230, 205, 0.35);
+  border: 1px solid rgba(107, 83, 32, 0.45);
+  border-radius: 999px;
+  padding: 8px 16px;
+  min-height: 40px;
+  margin: 2px auto 0;
   cursor: pointer;
-  transition: color 140ms;
+  transition: background 140ms, color 140ms;
 }
-.docket-sound:hover { color: var(--wax); }
+.docket-sound:hover { background: rgba(240, 230, 205, 0.6); color: var(--wax); }
 
 .hint {
   font-family: 'IM Fell English', serif;
@@ -437,6 +477,27 @@ button { font-family: inherit; }
 @keyframes unfurl-edge {
   from { top: 2%; opacity: 1; }
   to { top: 104%; opacity: 0; }
+}
+/* a rolled paper lip travels down with the unfurl's edge */
+.unfurl .diploma::before {
+  content: '';
+  position: absolute;
+  left: -2.5%;
+  right: -2.5%;
+  top: 0;
+  height: 24px;
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+  background: linear-gradient(180deg, #f0e5c9 0%, #dcc9a0 52%, #b09a6d 74%, rgba(60, 44, 16, 0.55) 84%, transparent 100%);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+  z-index: 4;
+  pointer-events: none;
+  animation: unfurl-lip 800ms var(--ease-drawer) 420ms both;
+}
+@keyframes unfurl-lip {
+  0% { top: 3%; opacity: 0; transform: scaleY(0.4); }
+  10% { opacity: 1; transform: none; }
+  74% { top: 96%; opacity: 1; }
+  100% { top: 100%; opacity: 0; }
 }
 
 .dip-head { text-align: center; margin-bottom: 10px; }
@@ -513,8 +574,8 @@ button { font-family: inherit; }
 
 /* short paper arrival, then two text groups — read complete thoughts sooner */
 .unfurl .dip-line, .unfurl .dip-foot, .unfurl .dip-colophon { opacity: 0; animation: press-in 460ms var(--ease-out) forwards; }
-.unfurl .dip-l1, .unfurl .dip-l2, .unfurl .dip-l3, .unfurl .dip-cite { animation-delay: 900ms; }
-.unfurl .dip-l4, .unfurl .dip-foot, .unfurl .dip-colophon { animation-delay: 1200ms; }
+.unfurl .dip-l1, .unfurl .dip-l2, .unfurl .dip-l3, .unfurl .dip-cite { animation-delay: 620ms; }
+.unfurl .dip-l4, .unfurl .dip-foot, .unfurl .dip-colophon { animation-delay: 880ms; }
 @keyframes press-in {
   from { opacity: 0; transform: translateY(7px); filter: blur(1.5px); }
   to { opacity: 1; transform: none; filter: none; }
@@ -548,7 +609,7 @@ button { font-family: inherit; }
 }
 .unfurl .wax-seal {
   opacity: 0;
-  animation: seal-squash 520ms cubic-bezier(0.34, 1.4, 0.5, 1) 1570ms forwards;
+  animation: seal-squash 520ms cubic-bezier(0.34, 1.4, 0.5, 1) 1150ms forwards;
 }
 @keyframes seal-squash {
   0% { opacity: 0; transform: scale(1.6) rotate(-18deg); }
@@ -580,7 +641,7 @@ button { font-family: inherit; }
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  margin-top: -14px;
+  margin-top: 14px;
   z-index: 3;
   animation: fade-up 460ms var(--ease-out) 1.6s both;
 }
@@ -599,14 +660,14 @@ button { font-family: inherit; }
   font-family: 'IM Fell English SC', serif;
   font-size: 13.5px;
   letter-spacing: 0.1em;
-  color: var(--ink);
-  background: linear-gradient(180deg, #e0bd66, var(--gold) 55%, #96771f);
+  color: #f5e3d0;
+  background: linear-gradient(180deg, #b84545, #8e2b2b 60%, #5c1a1c);
   border: none;
   border-radius: 2px;
   padding: 9px 16px;
   min-height: 40px;
   cursor: pointer;
-  box-shadow: 0 2px 0 #4a3809;
+  box-shadow: 0 2px 0 #3d0f10;
   transition: transform 120ms var(--ease-out), box-shadow 120ms;
 }
 .dispatch-tab:hover { transform: translateY(-2px); }
@@ -673,11 +734,11 @@ button { font-family: inherit; }
   .seal-cell { padding: 5px 4px; min-width: 60px; }
   .press { font-size: 16px; padding: 12px 16px; }
   .medal-stage { width: min(36vmin, 74vw); }
-  .phase-awarded .medal-stage { width: min(30vh, 46vw); }
+  .phase-awarded .medal-stage { width: min(34vh, 56vw); }
 }
 @media (min-width: 981px) and (max-height: 840px) {
   .medal-stage { width: min(36vmin, 320px); }
-  .phase-awarded .medal-stage { width: min(30vh, 260px); }
+  .phase-awarded .medal-stage { width: min(38vh, 320px); }
   .diploma-inner { padding: 15px 26px; }
   .dip-head { margin-bottom: 5px; }
   .dip-line { font-size: 15px; }
@@ -694,9 +755,27 @@ button { font-family: inherit; }
   .seal-cell { padding: 4px 4px; min-width: 54px; }
   .press { padding: 10px 16px; font-size: 15px; }
   .docket-sound { font-size: 12.5px; }
-  .medal-stage { width: min(26vh, 66vw); }
-  .phase-awarded .medal-stage { width: min(26vh, 46vw); }
+  .seal-explainer { display: none; }
+  .medal-stage { width: min(24vh, 66vw); }
+  .phase-awarded .medal-stage { width: min(30vh, 52vw); }
   .masthead .sub { font-size: 12.5px; }
+}
+
+/* ------- narrow screens: struck medal gets inspection size; the docket compacts ------- */
+@media (max-width: 980px) {
+  .phase-awarded .medal-stage { width: min(52vmin, 96vw); }
+  .petition { gap: 5px; padding: 10px 20px; }
+  .medal-stage { width: min(40vmin, 400px); }
+  .field-tag { font-size: 11.5px; margin-bottom: 2px; }
+  .petition-note { font-size: 12.5px; line-height: 1.35; }
+  .seal { width: 38px; }
+  .seal-face { font-size: 13px; }
+  .seal-grid { gap: 6px 4px; }
+  .seal-explainer { font-size: 11px; margin-top: 4px; }
+  .seal-why { display: none; }
+  .ach-input, .who-input { padding: 7px 10px; }
+  .press { padding: 12px 16px; }
+  .docket-sound { min-height: 34px; padding: 5px 14px; }
 }
 
 @keyframes fade-up {

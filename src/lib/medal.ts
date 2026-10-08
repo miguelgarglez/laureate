@@ -316,12 +316,12 @@ function renderBack(award: Award, size: number): HTMLCanvasElement {
   ctx.fillStyle = GOLD_DEEP
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.font = `${size * 0.052}px "IM Fell English SC", serif`
+  ctx.font = `${size * 0.06}px "IM Fell English SC", serif`
   ctx.fillText('AWARDED TO', 0, -r * 0.34)
-  ctx.font = `italic ${size * 0.075}px "EB Garamond", serif`
+  ctx.font = `italic ${size * 0.085}px "EB Garamond", serif`
   const who = award.recipient || 'the bearer'
   const whoFit = Math.min(1, (r * 0.78) / ctx.measureText(who).width)
-  ctx.font = `italic ${size * 0.075 * whoFit}px "EB Garamond", serif`
+  ctx.font = `italic ${size * 0.085 * whoFit}px "EB Garamond", serif`
   ctx.fillText(who.length > 34 ? who.slice(0, 34) + '…' : who, 0, -r * 0.14)
   ctx.strokeStyle = GOLD_DEEP
   ctx.lineWidth = size * 0.004
@@ -329,7 +329,7 @@ function renderBack(award: Award, size: number): HTMLCanvasElement {
   ctx.moveTo(-r * 0.4, r * 0.04)
   ctx.lineTo(r * 0.4, r * 0.04)
   ctx.stroke()
-  ctx.font = `${size * 0.045}px "IM Fell English SC", serif`
+  ctx.font = `${size * 0.052}px "IM Fell English SC", serif`
   const year = award.dateISO.slice(0, 4)
   ctx.fillText(`No. ${award.serial} · ${year}`, 0, r * 0.22)
   ctx.fillStyle = GOLD_DEEP

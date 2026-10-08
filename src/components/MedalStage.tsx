@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
-import type { Award } from '../lib/award'
+import type { Award, Category } from '../lib/award'
+import { CATEGORIES } from '../lib/award'
 import { MedalRenderer } from '../lib/medal'
 
 /* ─────────────────────────────────────────────────────────
@@ -24,7 +25,8 @@ const STRIKE = {
 const DIE_SEAT = -120 // die face-plate bottom bears down onto the planchet's face
 
 const MEDAL_Y = 70 // medal centre below canvas centre, leaving room for the ribbon
-const MEDAL_SCALE = 0.74 // medal drawn at 0.74 of canvas half-size, leaving a baize margin
+const MEDAL_SCALE = 0.74 // press scale: planchet sits inside the tooling with baize margin
+const AWARD_SCALE = 0.88 // display scale: the struck medal fills the stage for inspection
 const RIBBON_TOP = -560 // canvas units; ribbon runs off the top edge of frame
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
@@ -36,6 +38,7 @@ export type StagePhase = 'idle' | 'striking' | 'awarded'
 
 interface Props {
   award: Award | null
+  category: Category // selected field — engraved on the die face in idle
   phase: StagePhase
   strikeKey: number // increments per strike
   flipNudge: number // increments to flip the medal to its other face
@@ -47,13 +50,13 @@ interface Props {
 interface Mote { x: number; y: number; r: number; vx: number; vy: number; a: number }
 interface Speckle { x: number; y: number; len: number; rot: number; a: number }
 
-function drawRibbon(ctx: CanvasRenderingContext2D, t: number, flip: number) {
+function drawRibbon(ctx: CanvasRenderingContext2D, t: number, flip: number, attachY: number) {
   // ribbon lowers into frame once the award is struck; it twists with the medal
   const drop = (1 - easeOutQuart(clamp01(t))) * -1400
   const skew = Math.sin(flip) * 0.35
   const squeeze = 1 - Math.abs(Math.sin(flip)) * 0.25
   ctx.save()
-  ctx.translate(0, MEDAL_Y - 268) // attach where the medal's scaled top edge sits
+  ctx.translate(0, attachY)
   ctx.translate(0, drop)
   ctx.rotate(Math.sin(clamp01(t) * Math.PI * 2.4) * 0.05 * (1 - clamp01(t))) // pendulum settle
   ctx.globalAlpha = 0.3 + 0.7 * clamp01(t * 3) // fades in as it lowers
@@ -61,7 +64,7 @@ function drawRibbon(ctx: CanvasRenderingContext2D, t: number, flip: number) {
   ctx.scale(squeeze, 1)
   const topW = 168
   const botW = 104
-  const h = RIBBON_TOP - (MEDAL_Y - 268) // negative: ribbon reaches up from the attach point
+  const h = RIBBON_TOP - attachY // negative: ribbon reaches up from the attach point
   ctx.beginPath()
   ctx.moveTo(-botW / 2, 0)
   ctx.lineTo(botW / 2, 0)
@@ -105,7 +108,7 @@ function drawRibbon(ctx: CanvasRenderingContext2D, t: number, flip: number) {
   ctx.restore()
 }
 
-export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment, onFirstFlip, reducedMotion }: Props) {
+export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStrikeMoment, onFirstFlip, reducedMotion }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const flipFired = useRef(false)
@@ -131,6 +134,9 @@ export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment,
     emboss: 0,
     flash: -1, // contact light pulse behind the medal
     bedKick: 0, // anvil recoil on contact
+    sweep: -1, // light sweep across the finished relief
+    medalScale: MEDAL_SCALE,
+    ribbonFlip: 0, // the ribbon follows the medal's spin on a delay
     motes: [] as Mote[],
     speckle: [] as Speckle[],
     idleT: 0,
@@ -175,9 +181,10 @@ export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment,
       ctx.clearRect(0, 0, 1024, 1024)
       ctx.save()
       ctx.translate(512, 512)
-      if (phase === 'awarded') drawRibbon(ctx, 1, Math.PI * (flipNudge % 2))
+      const ms = phase === 'awarded' ? AWARD_SCALE : MEDAL_SCALE
+      if (phase === 'awarded') drawRibbon(ctx, 1, Math.PI * (flipNudge % 2), MEDAL_Y - 512 * ms)
       ctx.translate(0, MEDAL_Y)
-      ctx.scale(MEDAL_SCALE, MEDAL_SCALE)
+      ctx.scale(ms, ms)
       renderer.draw(ctx, {
         award: phase === 'idle' ? null : award,
         emboss: phase === 'idle' ? 0 : 1,
@@ -214,8 +221,10 @@ export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment,
           s.flipVel = 0
           s.flipAnim = null
           s.awardedT0 = -1
+          s.sweep = -1
         }
         const t = now - s.strikeT0
+        if (t > STRIKE.embossEnd && s.sweep < 0) s.sweep = 0
         if (t < STRIKE.dropStart) {
           // anticipation: the die shudders at the top of its stroke
           s.pressY = -1400 + Math.sin(t / 9) * 6
@@ -248,6 +257,8 @@ export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment,
         s.bedKick *= Math.pow(0.994, dt)
         if (s.shock >= 0) s.shock += dt / 700
         if (s.shock > 1) s.shock = -1
+        if (s.sweep >= 0) s.sweep += dt / 700
+        if (s.sweep > 1) s.sweep = -1
       } else {
         if (phase === 'awarded') {
           s.emboss = Math.max(s.emboss, 1)
@@ -291,6 +302,11 @@ export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment,
       s.sheenX += (s.sheenTX - s.sheenX) * k
       s.sheenY += (s.sheenTY - s.sheenY) * k
       s.idleT += dt
+      // the ribbon lags the medal's spin like a hanging cloth
+      s.ribbonFlip += (s.flip - s.ribbonFlip) * Math.min(1, dt / 320)
+      // display scale once struck — the medal fills the stage for inspection
+      const targetScale = phase === 'awarded' ? AWARD_SCALE : MEDAL_SCALE
+      s.medalScale += (targetScale - s.medalScale) * Math.min(1, dt / 350)
 
       // breathing
       const breathe = phase === 'idle' ? 1 + Math.sin(s.idleT / 2400) * 0.004 : 1
@@ -347,6 +363,32 @@ export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment,
         ctx.fill()
       }
 
+      // the press frame: two steel columns and a crosshead beam
+      ctx.save()
+      const frame = ctx.createLinearGradient(-460, 0, 460, 0)
+      frame.addColorStop(0, 'rgba(20,21,24,0.9)')
+      frame.addColorStop(0.15, 'rgba(58,62,68,0.85)')
+      frame.addColorStop(0.5, 'rgba(96,101,110,0.8)')
+      frame.addColorStop(0.85, 'rgba(58,62,68,0.85)')
+      frame.addColorStop(1, 'rgba(20,21,24,0.9)')
+      ctx.fillStyle = frame
+      ctx.fillRect(-462, -512, 58, 880) // left column
+      ctx.fillRect(404, -512, 58, 880) // right column
+      // column cap plates where they meet the bed
+      ctx.fillStyle = 'rgba(14,15,17,0.9)'
+      ctx.fillRect(-474, 328, 82, 40)
+      ctx.fillRect(392, 328, 82, 40)
+      // crosshead beam overhead — the ribbon later drapes over it
+      ctx.fillStyle = frame
+      ctx.fillRect(-474, -512, 948, 96)
+      const beamLip = ctx.createLinearGradient(0, -512, 0, -416)
+      beamLip.addColorStop(0, 'rgba(140,146,158,0.35)')
+      beamLip.addColorStop(0.6, 'rgba(0,0,0,0)')
+      beamLip.addColorStop(1, 'rgba(0,0,0,0.4)')
+      ctx.fillStyle = beamLip
+      ctx.fillRect(-474, -512, 948, 96)
+      ctx.restore()
+
       // the anvil: a solid iron collar with a visible front edge, recoiling on impact
       const kick = s.bedKick * 14
       ctx.save()
@@ -398,14 +440,14 @@ export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment,
       ctx.fillRect(-420, -420, 840, 840)
       ctx.restore()
 
-      // ribbon hangs into frame once the award lands
+      // ribbon drapes over the crosshead and twists with the medal
       if (phase === 'awarded' && s.awardedT0 > 0) {
-        drawRibbon(ctx, (now - s.awardedT0) / 650, s.flip)
+        drawRibbon(ctx, (now - s.awardedT0) / 650, s.ribbonFlip, MEDAL_Y - 512 * s.medalScale + 30)
       }
 
       ctx.save()
       ctx.translate(0, MEDAL_Y)
-      ctx.scale(scale * MEDAL_SCALE, scale * MEDAL_SCALE)
+      ctx.scale(scale * s.medalScale, scale * s.medalScale)
       renderer.setAward(phase === 'idle' ? null : award)
       renderer.draw(ctx, {
         award: phase === 'idle' ? null : award,
@@ -415,6 +457,44 @@ export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment,
         sheenY: s.sheenY,
       })
       ctx.restore()
+
+      // anvil lip: the planchet sits INSIDE the die bed, not on top of it
+      if (phase !== 'awarded') {
+        ctx.save()
+        ctx.translate(0, MEDAL_Y + 340 + kick)
+        ctx.scale(1, 0.24)
+        const lip = ctx.createLinearGradient(0, -90, 0, 90)
+        lip.addColorStop(0, 'rgba(10,11,13,0)')
+        lip.addColorStop(0.35, 'rgba(10,11,13,0.9)')
+        lip.addColorStop(0.62, 'rgba(60,64,70,0.75)')
+        lip.addColorStop(0.78, 'rgba(30,32,36,0.9)')
+        lip.addColorStop(1, 'rgba(10,11,13,0.4)')
+        ctx.fillStyle = lip
+        ctx.beginPath()
+        ctx.arc(0, 0, 512 * s.medalScale * 0.92, 0.15, Math.PI - 0.15)
+        ctx.closePath()
+        ctx.fill()
+        ctx.restore()
+      }
+
+      // a light sweep rolls over the finished relief
+      if (s.sweep >= 0) {
+        ctx.save()
+        ctx.translate(0, MEDAL_Y)
+        const mr = 512 * s.medalScale
+        ctx.beginPath()
+        ctx.arc(0, 0, mr, 0, Math.PI * 2)
+        ctx.clip()
+        ctx.rotate(-0.35)
+        const bx = (-1.3 + 2.6 * s.sweep) * mr
+        const bnd = ctx.createLinearGradient(bx - mr * 0.3, 0, bx + mr * 0.3, 0)
+        bnd.addColorStop(0, 'rgba(255,246,214,0)')
+        bnd.addColorStop(0.5, `rgba(255,246,214,${(0.4 * (1 - s.sweep)).toFixed(3)})`)
+        bnd.addColorStop(1, 'rgba(255,246,214,0)')
+        ctx.fillStyle = bnd
+        ctx.fillRect(bx - mr * 0.3, -mr, mr * 0.6, mr * 2)
+        ctx.restore()
+      }
 
       // the die descends out of the dark at the top of the frame — cool tool steel
       if (s.pressY > -1390) {
@@ -442,6 +522,14 @@ export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment,
         ctx.beginPath()
         ctx.roundRect(-pw / 2, ph - 26, pw, 26, 10)
         ctx.fill()
+        // the field's mark engraved on the die face
+        ctx.fillStyle = 'rgba(10,11,13,0.75)'
+        ctx.font = '600 56px "IM Fell English SC", serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(CATEGORIES[category].label.slice(0, 2).toUpperCase(), 0, ph * 0.45)
+        ctx.fillStyle = 'rgba(200,206,216,0.25)'
+        ctx.fillText(CATEGORIES[category].label.slice(0, 2).toUpperCase(), 0, ph * 0.45 - 2)
         ctx.restore()
         // darkness above: the die emerges from shadow, never clipped
         const vg = ctx.createLinearGradient(0, -512, 0, -300)
@@ -457,7 +545,7 @@ export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment,
     raf = requestAnimationFrame(loop)
     document.fonts.ready.then(() => renderer.refreshFonts())
     return () => cancelAnimationFrame(raf)
-  }, [phase, strikeKey, award, reducedMotion, onStrikeMoment, onFirstFlip, flipNudge])
+  }, [phase, strikeKey, award, category, reducedMotion, onStrikeMoment, onFirstFlip, flipNudge])
 
   // pointer interaction: tilt sheen always; drag-spin when awarded
   useEffect(() => {

@@ -202,6 +202,7 @@ export default function App() {
         <div className="stage-col" ref={stageRef}>
           <MedalStage
             award={award}
+            category={award?.category ?? category}
             phase={phase}
             strikeKey={strikeKey}
             flipNudge={flipNudge}
@@ -209,9 +210,6 @@ export default function App() {
             onFirstFlip={() => setHintDone(true)}
             reducedMotion={reduced}
           />
-        </div>
-
-        <div className="side-col">
           {phase === 'awarded' && (
             <div className="stage-hints">
               {!hintDone && !reduced && (
@@ -225,6 +223,9 @@ export default function App() {
               </button>
             </div>
           )}
+        </div>
+
+        <div className="side-col">
           {badHash && (
             <div className="objection" role="alert">
               <p className="obj-title">The Committee found no record of that award.</p>
