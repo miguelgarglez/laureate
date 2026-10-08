@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Award } from '../lib/award'
 import { downloadCard } from '../lib/sharecard'
 import { medalShareText } from '../lib/medal'
@@ -32,6 +32,7 @@ export function ShareBar({ award, onReset }: { award: Award; onReset: () => void
   const [copied, setCopied] = useState('')
   const [notice, setNotice] = useState('')
   const timer = useRef(0)
+  useEffect(() => () => clearTimeout(timer.current), [])
   const announce = (k: string, msg: string) => {
     setCopied(k)
     setNotice(msg)

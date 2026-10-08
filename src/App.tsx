@@ -66,6 +66,11 @@ export default function App() {
   const stageRef = useRef<HTMLDivElement>(null)
   const flipFrom = useRef<DOMRect | null>(null)
   const ceremonyTimer = useRef<number>(0)
+  // one ceremony at a time: a generation counter rejects orphan callbacks,
+  // and a synchronous ref blocks a second submit in the same event turn
+  const ceremonyGen = useRef(0)
+  const mintBusy = useRef(false)
+  const [pending, setPending] = useState(false)
 
   // OG render mode (?og) — used by the capture script only
   const og = new URLSearchParams(location.search).has('og')
@@ -81,6 +86,9 @@ export default function App() {
   // hash navigation: follow permalink changes without a reload
   useEffect(() => {
     const onHash = () => {
+      ceremonyGen.current++
+      mintBusy.current = false
+      setPending(false)
       clearTimeout(ceremonyTimer.current)
       if (!location.hash.startsWith('#a=')) {
         setBadHash(false)
@@ -104,7 +112,13 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
-  useEffect(() => () => clearTimeout(ceremonyTimer.current), [])
+  useEffect(
+    () => () => {
+      ceremonyGen.current++
+      clearTimeout(ceremonyTimer.current)
+    },
+    [],
+  )
 
   // FLIP the medal when the layout shifts on award — all viewports
   useEffect(() => {
@@ -125,18 +139,24 @@ export default function App() {
     })
   }, [phase, award, reduced])
 
-  // move focus to the outcome when the ceremony completes
+  // move focus to the outcome once the diploma has actually unfurled
   useEffect(() => {
     if (phase !== 'awarded') return
     const t = setTimeout(
-      () => document.querySelector<HTMLElement>('[data-focus="diploma"]')?.focus(),
-      reduced ? 60 : 900,
+      () =>
+        document
+          .querySelector<HTMLElement>('[data-focus="diploma"]')
+          ?.focus({ preventScroll: true }),
+      reduced ? 60 : 1900,
     )
     return () => clearTimeout(t)
   }, [phase, award, reduced])
 
   const onMint = useCallback(() => {
-    if (phase === 'striking') return
+    if (mintBusy.current) return
+    mintBusy.current = true
+    setPending(true)
+    const gen = ++ceremonyGen.current
     const a = mint({ recipient, achievement, category })
     setAward(a)
     setFlipNudge(0)
@@ -149,15 +169,19 @@ export default function App() {
     const delay = offscreen ? (reduced ? 0 : 620) : 0
     if (offscreen) stage.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' })
     ceremonyTimer.current = window.setTimeout(() => {
+      if (gen !== ceremonyGen.current) return
       setPhase('striking')
       setStrikeKey((k) => k + 1)
       ceremonyTimer.current = window.setTimeout(() => {
+        if (gen !== ceremonyGen.current) return
+        mintBusy.current = false
+        setPending(false)
         flipFrom.current = stageRef.current?.getBoundingClientRect() ?? null
         setPhase('awarded')
         shimmer(soundPref())
       }, reduced ? 300 : STRIKE_MS)
     }, delay)
-  }, [phase, recipient, achievement, category, reduced])
+  }, [recipient, achievement, category, reduced])
 
   const onContact = useCallback(() => {
     thunk(soundPref())
@@ -166,7 +190,15 @@ export default function App() {
     } catch { /* unsupported */ }
   }, [])
 
+  // stable identity: an inline callback would rebind the stage's pointer
+  // listeners mid-drag and cancel the first interaction it reports
+  const onFirstFlip = useCallback(() => setHintDone(true), [])
+
   const onReset = useCallback(() => {
+    ceremonyGen.current++
+    mintBusy.current = false
+    setPending(false)
+    clearTimeout(ceremonyTimer.current)
     flipFrom.current = stageRef.current?.getBoundingClientRect() ?? null
     setPhase('idle')
     setAward(null)
@@ -215,7 +247,7 @@ export default function App() {
             strikeKey={strikeKey}
             flipNudge={flipNudge}
             onStrikeMoment={onContact}
-            onFirstFlip={() => setHintDone(true)}
+            onFirstFlip={onFirstFlip}
             reducedMotion={reduced}
           />
           {phase === 'awarded' && (
@@ -265,7 +297,7 @@ export default function App() {
                 setCategory={setCategory}
                 onMint={onMint}
                 onToggleSound={toggleSound}
-                busy={phase === 'striking'}
+                busy={pending || phase === 'striking'}
                 soundOn={soundOn}
               />
             )

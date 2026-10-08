@@ -138,6 +138,7 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
     flash: -1, // contact light pulse behind the medal
     bedKick: 0, // anvil recoil on contact
     sweep: -1, // light sweep across the finished relief
+    sweepDone: false,
     medalScale: MEDAL_SCALE,
     tilt: FLAT_TILT, // 1 = face-on, FLAT_TILT = lying on the bed
     medalY: FLAT_Y,
@@ -229,9 +230,14 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
           s.flipAnim = null
           s.awardedT0 = -1
           s.sweep = -1
+          s.sweepDone = false
+          flipFired.current = false
         }
         const t = now - s.strikeT0
-        if (t > STRIKE.embossEnd && s.sweep < 0) s.sweep = 0
+        if (t > STRIKE.embossEnd && s.sweep < 0 && !s.sweepDone) {
+          s.sweep = 0
+          s.sweepDone = true
+        }
         if (t < STRIKE.dropStart) {
           // anticipation: the ram cocks a touch higher, shuddering under load
           s.pressY = DIE_PARK - easeInCubic(clamp01(t / STRIKE.dropStart)) * 80
@@ -274,6 +280,12 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
         s.pressY += (-1400 - s.pressY) * Math.min(1, dt / 300)
         s.squash += (1 - s.squash) * Math.min(1, dt / 200)
         s.shock = -1
+        // strike transients keep decaying after the phase ends — a cancelled
+        // or completed ceremony must never leave a frozen layer
+        if (s.flash >= 0) { s.flash += dt / 380; if (s.flash > 1) s.flash = -1 }
+        s.bedKick *= Math.pow(0.994, dt)
+        if (s.bedKick < 0.005) s.bedKick = 0
+        if (s.sweep >= 0) { s.sweep += dt / 700; if (s.sweep > 1) s.sweep = -1 }
       }
       s.prevPhase = phase
 

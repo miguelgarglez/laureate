@@ -39,7 +39,7 @@ check('guide allows typing in input', achVal === 'abc', achVal)
 // 4. mint → awarded; focus moved to diploma heading
 await page.fill('.ach-input', 'testing $& sequences')
 await page.click('.press')
-await page.waitForTimeout(3200)
+await page.waitForTimeout(5600)
 check('diploma visible', await page.locator('.diploma').isVisible())
 const focused = await page.evaluate(() => document.activeElement?.className)
 check('focus on diploma heading', String(focused).includes('dip-doc'), String(focused))

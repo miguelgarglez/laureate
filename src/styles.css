@@ -18,6 +18,7 @@
 }
 
 html, body, #root { min-height: 100dvh; }
+html, body { overflow-x: clip; }
 
 body {
   background: var(--baize-deep);
@@ -488,7 +489,7 @@ button { font-family: inherit; }
   100% { clip-path: inset(0 0 0 0); transform: none; filter: none; }
 }
 /* the unfurl's advancing edge drags a shadow down the baize */
-.unfurl .diploma::after {
+.diploma.unfurl::after {
   content: '';
   position: absolute;
   left: -5%;
@@ -504,7 +505,7 @@ button { font-family: inherit; }
   to { top: 104%; opacity: 0; }
 }
 /* a rolled paper lip travels down with the unfurl's edge */
-.unfurl .diploma::before {
+.diploma.unfurl::before {
   content: '';
   position: absolute;
   left: -2.5%;
@@ -716,7 +717,6 @@ button { font-family: inherit; }
   .dispatch-row { gap: 8px; padding: 6px 12px; flex-wrap: wrap; justify-content: center; }
   .dispatch-tab { padding: 9px 12px; font-size: 12px; letter-spacing: 0.08em; }
   .dlink { font-size: 13px; }
-  .ach-input, .who-input { font-size: 16px; }
 }
 @media (max-width: 360px) {
   .petition-note {
@@ -826,6 +826,12 @@ button { font-family: inherit; }
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; }
+}
+
+/* keep editable fields at 16px on small screens — iOS must not zoom on focus.
+   last in the file so no height-based rule can override it */
+@media (max-width: 480px) {
+  .ach-input, .who-input { font-size: 16px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
