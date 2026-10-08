@@ -9,7 +9,7 @@ import { ShareBar } from './components/ShareBar'
 import { renderCard } from './lib/sharecard'
 import { shimmer, thunk } from './lib/sfx'
 
-const STRIKE_MS = 1900
+const STRIKE_MS = 2150
 
 const soundPref = () => {
   try {
@@ -64,6 +64,7 @@ export default function App() {
     () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches,
   )
   const stageRef = useRef<HTMLDivElement>(null)
+  const sideRef = useRef<HTMLDivElement>(null)
   const flipFrom = useRef<DOMRect | null>(null)
   const ceremonyTimer = useRef<number>(0)
   // one ceremony at a time: a generation counter rejects orphan callbacks,
@@ -147,6 +148,17 @@ export default function App() {
   // and retire the petition ghost once the paper reveal covers it
   useEffect(() => {
     if (phase !== 'awarded') return
+    // the ghost masks against the diploma's real height — measure both once laid out
+    const raf = requestAnimationFrame(() => {
+      const dip = sideRef.current?.querySelector<HTMLElement>('.diploma')
+      const ghost = sideRef.current?.querySelector<HTMLElement>('.docket-ghost')
+      if (dip && ghost && sideRef.current) {
+        sideRef.current.style.setProperty(
+          '--ghost-clip',
+          `${Math.max(0, ghost.offsetHeight - dip.offsetHeight)}px`,
+        )
+      }
+    })
     const focusT = setTimeout(
       () =>
         document
@@ -156,6 +168,7 @@ export default function App() {
     )
     const ghostT = setTimeout(() => setPaperGone(true), reduced ? 300 : 1500)
     return () => {
+      cancelAnimationFrame(raf)
       clearTimeout(focusT)
       clearTimeout(ghostT)
     }
@@ -192,6 +205,8 @@ export default function App() {
       }, reduced ? 300 : STRIKE_MS)
     }, delay)
   }, [recipient, achievement, category, reduced])
+
+  const onFlipRequest = useCallback(() => setFlipNudge((n) => n + 1), [])
 
   const onContact = useCallback(() => {
     thunk(soundPref())
@@ -258,6 +273,7 @@ export default function App() {
             flipNudge={flipNudge}
             onStrikeMoment={onContact}
             onFirstFlip={onFirstFlip}
+            onFlipRequest={onFlipRequest}
             reducedMotion={reduced}
           />
           {phase === 'awarded' && (
@@ -275,7 +291,7 @@ export default function App() {
           )}
         </div>
 
-        <div className="side-col">
+        <div className="side-col" ref={sideRef}>
           {badHash && (
             <div className="objection" role="alert">
               <p className="obj-title">The Committee found no record of that award.</p>

@@ -159,7 +159,9 @@ button { font-family: inherit; }
   min-height: 38px;
   margin-top: -4px;
   z-index: 5;
+  pointer-events: none;
 }
+.stage-hints :is(a, button) { pointer-events: auto; }
 .drag-hint {
   font-family: 'IM Fell English', serif;
   font-style: italic;
@@ -206,8 +208,9 @@ button { font-family: inherit; }
   pointer-events: none;
 }
 
-/* the petition's ghost: still pinned over the slot at award mount,
-   fading as the unfurling diploma physically covers it */
+/* the petition's ghost: still pinned over the slot at award mount.
+   The unfurling diploma consumes it from the bottom — the ghost's tail
+   clips away on the same progress curve as the roll, then it fades */
 .docket-ghost {
   position: absolute;
   top: 0;
@@ -216,7 +219,14 @@ button { font-family: inherit; }
   opacity: 0.28;
   transform: translateY(3px) rotate(-0.6deg);
   pointer-events: none;
-  animation: ghost-away 700ms ease 550ms forwards;
+  overflow: hidden;
+  animation:
+    ghost-tuck 800ms var(--ease-drawer) 550ms both,
+    ghost-away 320ms ease 1150ms forwards;
+}
+@keyframes ghost-tuck {
+  0% { clip-path: inset(0 0 0 0); }
+  60%, 100% { clip-path: inset(0 0 var(--ghost-clip, 110px) 0); }
 }
 @keyframes ghost-away {
   to { opacity: 0; transform: translateY(8px) rotate(-0.6deg); }
@@ -524,9 +534,11 @@ button { font-family: inherit; }
   pointer-events: none;
 }
 @keyframes unfurl-edge {
-  0% { top: 2%; opacity: 0; }
-  14% { opacity: 1; }
-  100% { top: 104%; opacity: 0; }
+  0% { top: 0%; opacity: 0; }
+  12% { opacity: 1; }
+  60% { top: 99%; opacity: 1; }
+  72% { top: 99%; opacity: 0; }
+  100% { top: 99%; opacity: 0; }
 }
 /* a rolled paper lip travels down with the unfurl's edge */
 .diploma.unfurl::before {
@@ -544,10 +556,11 @@ button { font-family: inherit; }
   animation: unfurl-lip 800ms var(--ease-drawer) 550ms both;
 }
 @keyframes unfurl-lip {
-  0% { top: 3%; opacity: 0; transform: scaleY(0.4); }
+  0% { top: 0%; opacity: 0; transform: scaleY(0.4); }
   10% { opacity: 1; transform: none; }
-  74% { top: 96%; opacity: 1; }
-  100% { top: 100%; opacity: 0; }
+  60% { top: 97%; opacity: 1; }
+  68% { top: 99%; opacity: 0; }
+  100% { top: 99%; opacity: 0; }
 }
 
 .dip-head { text-align: center; margin-bottom: 10px; }
