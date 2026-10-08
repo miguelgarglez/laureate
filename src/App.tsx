@@ -71,6 +71,9 @@ export default function App() {
   const ceremonyGen = useRef(0)
   const mintBusy = useRef(false)
   const [pending, setPending] = useState(false)
+  // the petition lingers as an inert ghost under the unfurling diploma —
+  // the paperwork transforms, it never teleports
+  const [paperGone, setPaperGone] = useState(() => !!award)
 
   // OG render mode (?og) — used by the capture script only
   const og = new URLSearchParams(location.search).has('og')
@@ -102,6 +105,7 @@ export default function App() {
         setAward(a)
         setPhase('awarded')
         setBadHash(false)
+        setPaperGone(true)
       } else {
         setAward(null)
         setPhase('idle')
@@ -139,17 +143,22 @@ export default function App() {
     })
   }, [phase, award, reduced])
 
-  // move focus to the outcome once the diploma has actually unfurled
+  // move focus to the outcome once the diploma has actually unfurled,
+  // and retire the petition ghost once the paper reveal covers it
   useEffect(() => {
     if (phase !== 'awarded') return
-    const t = setTimeout(
+    const focusT = setTimeout(
       () =>
         document
           .querySelector<HTMLElement>('[data-focus="diploma"]')
           ?.focus({ preventScroll: true }),
-      reduced ? 60 : 1900,
+      reduced ? 60 : 1300,
     )
-    return () => clearTimeout(t)
+    const ghostT = setTimeout(() => setPaperGone(true), reduced ? 300 : 1500)
+    return () => {
+      clearTimeout(focusT)
+      clearTimeout(ghostT)
+    }
   }, [phase, award, reduced])
 
   const onMint = useCallback(() => {
@@ -161,6 +170,7 @@ export default function App() {
     setAward(a)
     setFlipNudge(0)
     setHintDone(false)
+    setPaperGone(false)
     history.replaceState(null, '', '#a=' + encodeAward(a))
     // on short screens the mint button sits below the press — bring the whole
     // machine into view before the strike, or the visitor misses it
@@ -285,7 +295,25 @@ export default function App() {
           )}
 
           {phase === 'awarded' && award ? (
-            <Diploma award={award} animate={!reduced} />
+            <>
+              {!paperGone && (
+                <div className="docket-ghost" inert aria-hidden="true">
+                  <CommitteeForm
+                    recipient={recipient}
+                    achievement={achievement}
+                    category={category}
+                    setRecipient={setRecipient}
+                    setAchievement={setAchievement}
+                    setCategory={setCategory}
+                    onMint={onMint}
+                    onToggleSound={toggleSound}
+                    busy
+                    soundOn={soundOn}
+                  />
+                </div>
+              )}
+              <Diploma award={award} animate={!reduced} />
+            </>
           ) : (
             !badHash && (
               <CommitteeForm

@@ -368,7 +368,8 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
         ctx.restore()
       }
 
-      // anticipation light: forge-glow pools on the bed as the ram commits
+      // anticipation light: forge-glow pools on the bed and rims the machine
+      // as the ram commits — the whole press reads as one lit assembly
       if (phase === 'striking') {
         const t2 = now - s.strikeT0
         const glow = t2 < STRIKE.dropEnd
@@ -380,6 +381,24 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
           gg.addColorStop(1, 'rgba(0,0,0,0)')
           ctx.fillStyle = gg
           ctx.fillRect(-380, FLAT_Y - 380, 760, 560)
+          // warm rims on the column inner faces
+          for (const cx of [-433, 433]) {
+            const cg = ctx.createLinearGradient(cx - 30, 0, cx + 30, 0)
+            const a = 0.14 * glow
+            cg.addColorStop(0, 'rgba(255,196,100,0)')
+            cg.addColorStop(0.5, `rgba(255,196,100,${a.toFixed(3)})`)
+            cg.addColorStop(1, 'rgba(255,196,100,0)')
+            ctx.fillStyle = cg
+            ctx.fillRect(cx - 30, -420, 60, 700)
+          }
+          // the underside of the die catches the pool below it
+          if (s.pressY > -1390) {
+            const dg = ctx.createLinearGradient(0, s.pressY - 30, 0, s.pressY + 40)
+            dg.addColorStop(0, 'rgba(255,210,130,0)')
+            dg.addColorStop(1, `rgba(255,210,130,${(0.3 * glow).toFixed(3)})`)
+            ctx.fillStyle = dg
+            ctx.fillRect(-395, s.pressY - 30, 790, 70)
+          }
         }
       }
 
@@ -544,7 +563,7 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
         const bx = (-1.3 + 2.6 * s.sweep) * mr
         const bnd = ctx.createLinearGradient(bx - mr * 0.3, 0, bx + mr * 0.3, 0)
         bnd.addColorStop(0, 'rgba(255,246,214,0)')
-        bnd.addColorStop(0.5, `rgba(255,246,214,${(0.4 * (1 - s.sweep)).toFixed(3)})`)
+        bnd.addColorStop(0.5, `rgba(255,246,214,${(0.55 * (1 - s.sweep)).toFixed(3)})`)
         bnd.addColorStop(1, 'rgba(255,246,214,0)')
         ctx.fillStyle = bnd
         ctx.fillRect(bx - mr * 0.3, -mr, mr * 0.6, mr * 2)
@@ -553,7 +572,7 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
 
       // the die head hangs below the crosshead — cool tool steel
       if (s.pressY > -1390) {
-        const pw = 640, ph = 168
+        const pw = 790, ph = 168
         ctx.save()
         ctx.translate(0, s.pressY - ph) // s.pressY is canvas coords
         const pg = ctx.createLinearGradient(-pw / 2, 0, pw / 2, 0)
@@ -565,7 +584,7 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
         ctx.fillStyle = pg
         // shaft rising into the crosshead
         ctx.fillRect(-pw * 0.18, -800, pw * 0.36, 800)
-        // die head with a slight bevel — wide enough to cover the blank's face
+        // die head with a slight bevel — spans the full blank face it stamps
         ctx.beginPath()
         ctx.roundRect(-pw / 2, 0, pw, ph, 14)
         ctx.fill()
@@ -577,30 +596,43 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
         ctx.beginPath()
         ctx.roundRect(-pw / 2, ph - 26, pw, 26, 10)
         ctx.fill()
-        // the engraved boss on the die's face — the same mark it strikes
+        // the bright contact plane — the bevelled bottom edge of the stamp,
+        // readable while the head descends and retracts
+        const bevel = ctx.createLinearGradient(0, ph - 9, 0, ph)
+        bevel.addColorStop(0, 'rgba(150,158,170,0)')
+        bevel.addColorStop(1, 'rgba(190,200,214,0.5)')
+        ctx.fillStyle = bevel
+        ctx.beginPath()
+        ctx.roundRect(-pw / 2 + 8, ph - 9, pw - 16, 9, 5)
+        ctx.fill()
+        // the engraved plate on the die's face — the same mark it strikes,
+        // cut deep enough to read at inspection distance
         ctx.save()
         ctx.translate(0, ph / 2)
-        const boss = ctx.createRadialGradient(-14, -18, 6, 0, 0, 72)
-        boss.addColorStop(0, '#5a5f68')
-        boss.addColorStop(0.7, '#33363c')
-        boss.addColorStop(1, '#1b1d20')
-        ctx.fillStyle = boss
+        const plateW = 300, plateH = 128
+        const plate = ctx.createLinearGradient(-plateW / 2, -plateH / 2, plateW / 2, plateH / 2)
+        plate.addColorStop(0, '#585d66')
+        plate.addColorStop(0.55, '#33363c')
+        plate.addColorStop(1, '#1a1c1f')
+        ctx.fillStyle = plate
         ctx.beginPath()
-        ctx.arc(0, 0, 68, 0, Math.PI * 2)
+        ctx.roundRect(-plateW / 2, -plateH / 2, plateW, plateH, 18)
         ctx.fill()
-        ctx.strokeStyle = 'rgba(10,11,13,0.85)'
+        ctx.strokeStyle = 'rgba(8,9,11,0.85)'
         ctx.lineWidth = 5
         ctx.stroke()
         ctx.strokeStyle = 'rgba(190,196,206,0.3)'
-        ctx.lineWidth = 1.6
+        ctx.lineWidth = 1.8
         ctx.beginPath()
-        ctx.arc(0, 0, 61, 0, Math.PI * 2)
+        ctx.roundRect(-plateW / 2 + 8, -plateH / 2 + 8, plateW - 16, plateH - 16, 12)
         ctx.stroke()
-        ctx.strokeStyle = ctx.fillStyle = 'rgba(8,9,11,0.85)'
-        emblem(ctx, 38, CATEGORIES[category].emblem)
-        ctx.strokeStyle = ctx.fillStyle = 'rgba(200,206,216,0.28)'
-        ctx.translate(0, -2)
-        emblem(ctx, 38, CATEGORIES[category].emblem)
+        // deep engraving, then a raised highlight offset — chiselled metal
+        ctx.strokeStyle = ctx.fillStyle = 'rgba(6,7,9,0.9)'
+        ctx.lineWidth = 6
+        emblem(ctx, 190, CATEGORIES[category].emblem)
+        ctx.strokeStyle = ctx.fillStyle = 'rgba(205,212,224,0.3)'
+        ctx.translate(0, -2.5)
+        emblem(ctx, 190, CATEGORIES[category].emblem)
         ctx.restore()
         ctx.restore()
         // darkness above: the die emerges from shadow, never clipped
