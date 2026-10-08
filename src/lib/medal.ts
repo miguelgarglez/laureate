@@ -84,7 +84,7 @@ function laurel(ctx: CanvasRenderingContext2D, r: number) {
   }
 }
 
-function emblem(ctx: CanvasRenderingContext2D, r: number, kind: string) {
+export function emblem(ctx: CanvasRenderingContext2D, r: number, kind: string) {
   const s = r * 0.46
   ctx.lineWidth = r * 0.032
   ctx.lineCap = 'round'

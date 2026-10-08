@@ -213,7 +213,7 @@ export default function App() {
           {phase === 'awarded' && (
             <div className="stage-hints">
               {!hintDone && !reduced && (
-                <p className="drag-hint">It spins — drag it, or tap to turn it over.</p>
+                <p className="drag-hint">It spins — drag it.</p>
               )}
               <button
                 className="flip-btn"

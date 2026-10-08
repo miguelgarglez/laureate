@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { Award, Category } from '../lib/award'
 import { CATEGORIES } from '../lib/award'
-import { MedalRenderer } from '../lib/medal'
+import { MedalRenderer, emblem } from '../lib/medal'
 
 /* ─────────────────────────────────────────────────────────
  * STRIKE STORYBOARD
@@ -22,8 +22,10 @@ const STRIKE = {
   dwellEnd: 1240, // the die holds the face for a beat before releasing
   retractEnd: 1800,
 }
-const DIE_SEAT = -120 // die face-plate bottom bears down onto the planchet's face
-const DIE_PARK = -300 // ram parked: die head hangs just clear of the planchet
+const DIE_SEAT = 368 // die face-plate lands on the flat planchet's surface
+const DIE_PARK = 200 // ram parked: die head hovers just above the blank
+const FLAT_Y = 370 // the planchet lies flat in the anvil slot
+const FLAT_TILT = 0.34 // squash factor: a coin lying on the bed, seen at an angle
 
 const MEDAL_Y = 70 // medal centre below canvas centre, leaving room for the ribbon
 const MEDAL_SCALE = 0.74 // press scale: planchet sits inside the tooling with baize margin
@@ -137,6 +139,8 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
     bedKick: 0, // anvil recoil on contact
     sweep: -1, // light sweep across the finished relief
     medalScale: MEDAL_SCALE,
+    tilt: FLAT_TILT, // 1 = face-on, FLAT_TILT = lying on the bed
+    medalY: FLAT_Y,
     ribbonFlip: 0, // the ribbon follows the medal's spin on a delay
     motes: [] as Mote[],
     speckle: [] as Speckle[],
@@ -183,9 +187,11 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
       ctx.save()
       ctx.translate(512, 512)
       const ms = phase === 'awarded' ? AWARD_SCALE : MEDAL_SCALE
+      const tilt = phase === 'awarded' ? 1 : FLAT_TILT
+      const my = phase === 'awarded' ? MEDAL_Y : FLAT_Y
       if (phase === 'awarded') drawRibbon(ctx, 1, Math.PI * (flipNudge % 2), MEDAL_Y - 512 * ms)
-      ctx.translate(0, MEDAL_Y)
-      ctx.scale(ms, ms)
+      ctx.translate(0, my)
+      ctx.scale(ms, ms * tilt)
       renderer.draw(ctx, {
         award: phase === 'idle' ? null : award,
         emboss: phase === 'idle' ? 0 : 1,
@@ -227,12 +233,11 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
         const t = now - s.strikeT0
         if (t > STRIKE.embossEnd && s.sweep < 0) s.sweep = 0
         if (t < STRIKE.dropStart) {
-          // anticipation: the parked ram retracts into the dark, shuddering
-          const k = easeInCubic(clamp01(t / STRIKE.dropStart))
-          s.pressY = DIE_PARK - k * (DIE_PARK + 1400) + Math.sin(t / 9) * 6 * (1 - k)
+          // anticipation: the ram cocks a touch higher, shuddering under load
+          s.pressY = DIE_PARK - easeInCubic(clamp01(t / STRIKE.dropStart)) * 80
           s.squash = 1
         } else if (t < STRIKE.dropEnd) {
-          s.pressY = -1400 + easeInCubic((t - STRIKE.dropStart) / (STRIKE.dropEnd - STRIKE.dropStart)) * (DIE_SEAT + 1400)
+          s.pressY = DIE_PARK - 80 + easeInCubic((t - STRIKE.dropStart) / (STRIKE.dropEnd - STRIKE.dropStart)) * (DIE_SEAT - DIE_PARK + 80)
         } else {
           if (!s.contactFired) {
             s.contactFired = true
@@ -251,8 +256,8 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
           s.emboss = 1
         }
         if (t > STRIKE.dwellEnd) {
-          // heavier, slower retreat than the drop
-          s.pressY = DIE_SEAT - easeOutQuart(clamp01((t - STRIKE.dwellEnd) / (STRIKE.retractEnd - STRIKE.dwellEnd))) * (DIE_SEAT + 1400)
+          // the ram returns to its parked hover
+          s.pressY = DIE_SEAT - easeOutQuart(clamp01((t - STRIKE.dwellEnd) / (STRIKE.retractEnd - STRIKE.dwellEnd))) * (DIE_SEAT - DIE_PARK)
         }
         if (s.flash >= 0) s.flash += dt / 380
         if (s.flash > 1) s.flash = -1
@@ -309,13 +314,19 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
       // display scale once struck — the medal fills the stage for inspection
       const targetScale = phase === 'awarded' ? AWARD_SCALE : MEDAL_SCALE
       s.medalScale += (targetScale - s.medalScale) * Math.min(1, dt / 350)
+      // the struck medal lifts off the bed and turns to face the visitor
+      const tiltT = phase === 'awarded' ? 1 : FLAT_TILT
+      const medalYT = phase === 'awarded' ? MEDAL_Y : FLAT_Y
+      s.tilt += (tiltT - s.tilt) * Math.min(1, dt / 380)
+      s.medalY += (medalYT - s.medalY) * Math.min(1, dt / 380)
 
-      // idle: the ram sits parked just above the planchet, breathing faintly
+      // at rest the ram hovers just above the work, breathing faintly;
+      // once awarded it retracts behind the beam so the medal lifts clear
       if (phase === 'idle') s.pressY = DIE_PARK + Math.sin(s.idleT / 900) * 2
+      else if (phase === 'awarded') s.pressY += (-500 - s.pressY) * Math.min(1, dt / 400)
 
       // breathing
-      const breathe = phase === 'idle' ? 1 + Math.sin(s.idleT / 2400) * 0.004 : 1
-      const scale = breathe * s.squash
+      const scale = phase === 'idle' ? 1 + Math.sin(s.idleT / 2400) * 0.004 : 1
 
       ctx.clearRect(0, 0, 1024, 1024)
       ctx.save()
@@ -331,19 +342,23 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
         ctx.stroke()
       }
 
-      // shockwave ring on the baize — decays before the canvas edge
+      // shockwave ring out of the anvil — decays before the canvas edge
       if (s.shock >= 0) {
+        ctx.save()
+        ctx.translate(0, s.medalY + 30)
+        ctx.scale(1, 0.4)
         const rr = 512 * (0.72 + s.shock * 0.18)
         ctx.strokeStyle = `rgba(233,205,120,${(0.5 * (1 - s.shock)).toFixed(3)})`
         ctx.lineWidth = 10 * (1 - s.shock) + 2
         ctx.beginPath()
-        ctx.arc(0, MEDAL_Y, rr, 0, Math.PI * 2)
+        ctx.arc(0, 0, rr, 0, Math.PI * 2)
         ctx.stroke()
+        ctx.restore()
       }
 
-      // contact flash: a pulse of forge-light behind the medal
+      // contact flash: a pulse of forge-light over the work surface
       if (s.flash >= 0) {
-        const fg = ctx.createRadialGradient(0, MEDAL_Y - 40, 10, 0, MEDAL_Y - 40, 520)
+        const fg = ctx.createRadialGradient(0, s.medalY - 120, 10, 0, s.medalY - 120, 520)
         fg.addColorStop(0, `rgba(255,232,170,${(0.55 * (1 - s.flash)).toFixed(3)})`)
         fg.addColorStop(0.5, `rgba(233,190,90,${(0.22 * (1 - s.flash)).toFixed(3)})`)
         fg.addColorStop(1, 'rgba(0,0,0,0)')
@@ -371,14 +386,18 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
       // the press frame: two steel columns and a crosshead beam
       ctx.save()
       const frame = ctx.createLinearGradient(-460, 0, 460, 0)
-      frame.addColorStop(0, 'rgba(20,21,24,0.9)')
-      frame.addColorStop(0.15, 'rgba(58,62,68,0.85)')
-      frame.addColorStop(0.5, 'rgba(96,101,110,0.8)')
-      frame.addColorStop(0.85, 'rgba(58,62,68,0.85)')
-      frame.addColorStop(1, 'rgba(20,21,24,0.9)')
+      frame.addColorStop(0, 'rgba(24,25,28,0.9)')
+      frame.addColorStop(0.15, 'rgba(74,79,88,0.88)')
+      frame.addColorStop(0.5, 'rgba(122,128,140,0.85)')
+      frame.addColorStop(0.85, 'rgba(74,79,88,0.88)')
+      frame.addColorStop(1, 'rgba(24,25,28,0.9)')
       ctx.fillStyle = frame
       ctx.fillRect(-462, -512, 58, 880) // left column
       ctx.fillRect(404, -512, 58, 880) // right column
+      // a lighter edge on the column faces so the silhouette reads
+      ctx.fillStyle = 'rgba(140,146,158,0.3)'
+      ctx.fillRect(-404, -512, 6, 880)
+      ctx.fillRect(398, -512, 6, 880)
       // column cap plates where they meet the bed
       ctx.fillStyle = 'rgba(14,15,17,0.9)'
       ctx.fillRect(-474, 328, 82, 40)
@@ -436,7 +455,7 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
 
       // medal shadow on baize
       ctx.save()
-      ctx.translate(0, MEDAL_Y + 392)
+      ctx.translate(0, Math.min(470, s.medalY + 512 * s.medalScale * s.tilt + 10))
       ctx.scale(1, 0.14)
       const shg = ctx.createRadialGradient(0, 0, 0, 0, 0, 420)
       shg.addColorStop(0, 'rgba(0,0,0,0.5)')
@@ -447,12 +466,12 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
 
       // ribbon drapes over the crosshead and twists with the medal
       if (phase === 'awarded' && s.awardedT0 > 0) {
-        drawRibbon(ctx, (now - s.awardedT0) / 650, s.ribbonFlip, MEDAL_Y - 512 * s.medalScale + 30)
+        drawRibbon(ctx, (now - s.awardedT0) / 650, s.ribbonFlip, s.medalY - 512 * s.medalScale * s.tilt + 30)
       }
 
       ctx.save()
-      ctx.translate(0, MEDAL_Y)
-      ctx.scale(scale * s.medalScale, scale * s.medalScale)
+      ctx.translate(0, s.medalY)
+      ctx.scale(scale * s.medalScale, scale * s.medalScale * s.tilt * s.squash)
       renderer.setAward(phase === 'idle' ? null : award)
       renderer.draw(ctx, {
         award: phase === 'idle' ? null : award,
@@ -464,10 +483,10 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
       ctx.restore()
 
       // anvil lip: the planchet sits INSIDE the die bed, not on top of it
-      if (phase !== 'awarded') {
+      if (s.tilt < 0.9) {
         ctx.save()
-        ctx.translate(0, MEDAL_Y + 340 + kick)
-        ctx.scale(1, 0.24)
+        ctx.translate(0, s.medalY + 95 + kick)
+        ctx.scale(1, 0.16)
         const lip = ctx.createLinearGradient(0, -90, 0, 90)
         lip.addColorStop(0, 'rgba(10,11,13,0)')
         lip.addColorStop(0.35, 'rgba(10,11,13,0.9)')
@@ -476,7 +495,7 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
         lip.addColorStop(1, 'rgba(10,11,13,0.4)')
         ctx.fillStyle = lip
         ctx.beginPath()
-        ctx.arc(0, 0, 512 * s.medalScale * 0.92, 0.15, Math.PI - 0.15)
+        ctx.arc(0, 0, 512 * s.medalScale * 0.94, 0.15, Math.PI - 0.15)
         ctx.closePath()
         ctx.fill()
         ctx.restore()
@@ -485,7 +504,8 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
       // a light sweep rolls over the finished relief
       if (s.sweep >= 0) {
         ctx.save()
-        ctx.translate(0, MEDAL_Y)
+        ctx.translate(0, s.medalY)
+        ctx.scale(1, s.tilt)
         const mr = 512 * s.medalScale
         ctx.beginPath()
         ctx.arc(0, 0, mr, 0, Math.PI * 2)
@@ -513,8 +533,8 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
         pg.addColorStop(0.8, '#4a4e55')
         pg.addColorStop(1, '#141518')
         ctx.fillStyle = pg
-        // shaft rising into the dark
-        ctx.fillRect(-pw * 0.18, -320, pw * 0.36, 320)
+        // shaft rising into the crosshead
+        ctx.fillRect(-pw * 0.18, -800, pw * 0.36, 800)
         // die head with a slight bevel
         ctx.beginPath()
         ctx.roundRect(-pw / 2, 0, pw, ph, 14)
@@ -527,14 +547,15 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
         ctx.beginPath()
         ctx.roundRect(-pw / 2, ph - 26, pw, 26, 10)
         ctx.fill()
-        // the field's mark engraved on the die face
-        ctx.fillStyle = 'rgba(10,11,13,0.75)'
-        ctx.font = '600 56px "IM Fell English SC", serif'
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.fillText(CATEGORIES[category].label.slice(0, 2).toUpperCase(), 0, ph * 0.45)
-        ctx.fillStyle = 'rgba(200,206,216,0.25)'
-        ctx.fillText(CATEGORIES[category].label.slice(0, 2).toUpperCase(), 0, ph * 0.45 - 2)
+        // the field's relief engraved on the die face — the same mark it strikes
+        ctx.save()
+        ctx.translate(0, ph * 0.5)
+        ctx.strokeStyle = ctx.fillStyle = 'rgba(10,11,13,0.78)'
+        emblem(ctx, 100, CATEGORIES[category].emblem)
+        ctx.strokeStyle = ctx.fillStyle = 'rgba(200,206,216,0.22)'
+        ctx.translate(0, -2)
+        emblem(ctx, 100, CATEGORIES[category].emblem)
+        ctx.restore()
         ctx.restore()
         // darkness above: the die emerges from shadow, never clipped
         const vg = ctx.createLinearGradient(0, -512, 0, -300)

@@ -96,12 +96,15 @@ export function CommitteeForm(p: Props) {
         </div>
         <p className="seal-explainer">
           <span className="seal-motto">{CATEGORIES[p.category].motto}.</span>
-          <span className="seal-why"> The field is engraved on the die and struck into the medal.</span>
+          <span className="seal-why"> Changes the medal's emblem and its citation.</span>
         </p>
       </fieldset>
       <button className="press" data-guide="mint" type="submit" disabled={!ready || p.busy}>
         <span className="press-face">Mint the medal</span>
       </button>
+      {!ready && !p.achievement && (
+        <p className="hint">The deed first — then the Committee strikes.</p>
+      )}
       <button type="button" className="docket-sound" onClick={p.onToggleSound} aria-pressed={p.soundOn}>
         Sound: {p.soundOn ? 'on' : 'off'}
       </button>

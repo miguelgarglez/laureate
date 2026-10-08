@@ -111,8 +111,14 @@ button { font-family: inherit; }
     gap: clamp(28px, 4vw, 68px);
   }
   .phase-idle .side-col,
-  .phase-striking .side-col { order: -1; }
+  .phase-striking .side-col,
+  .phase-awarded .side-col { order: -1; }
+  /* the mint stays anchored right; the petition's slot becomes the diploma's */
   .phase-awarded .side-col { max-width: 560px; }
+  .phase-striking .medal-stage {
+    transform: scale(1.05);
+    transition: transform 450ms var(--ease-drawer);
+  }
 }
 
 .stage-col {
@@ -329,7 +335,7 @@ button { font-family: inherit; }
 .seal-cell:nth-child(3n + 1) .seal { border-radius: 47% 53% 51% 49% / 52% 46% 54% 48%; }
 .seal-cell:nth-child(3n + 2) .seal { border-radius: 53% 47% 49% 51% / 47% 53% 46% 54%; }
 .seal-cell:nth-child(3n) .seal { border-radius: 50% 46% 54% 48% / 49% 52% 48% 52%; }
-/* a stray drip off the edge */
+/* a stray drip off the edge — never the same twice */
 .seal::after {
   content: '';
   position: absolute;
@@ -340,6 +346,16 @@ button { font-family: inherit; }
   border-radius: 60% 40% 55% 45% / 55% 60% 40% 45%;
   background: radial-gradient(circle at 40% 30%, var(--wax), #5c1a1c 90%);
   box-shadow: 0 2px 5px rgba(60, 15, 15, 0.35);
+}
+.seal-cell:nth-child(3n + 2) .seal::after {
+  left: 80%;
+  top: 16%;
+  transform: rotate(38deg) scale(0.78);
+}
+.seal-cell:nth-child(3n) .seal::after {
+  left: -4%;
+  top: 26%;
+  transform: rotate(-26deg) scale(1.14);
 }
 .seal-face {
   font-family: 'IM Fell English SC', serif;
@@ -652,7 +668,7 @@ button { font-family: inherit; }
   gap: 8px;
   margin-top: 14px;
   z-index: 3;
-  animation: fade-up 460ms var(--ease-out) 1.6s both;
+  animation: fade-up 460ms var(--ease-out) 1.15s both;
 }
 .dispatch-row {
   display: flex;
@@ -703,8 +719,9 @@ button { font-family: inherit; }
   .ach-input, .who-input { font-size: 16px; }
 }
 .dispatch .dlink-quiet {
-  color: rgba(240, 230, 205, 0.5);
-  border-bottom-color: rgba(240, 230, 205, 0.25);
+  color: rgba(240, 230, 205, 0.74);
+  border-bottom-color: rgba(240, 230, 205, 0.4);
+  font-size: 15px;
 }
 .dispatch .dlink-quiet:hover { color: var(--parchment); }
 
@@ -765,6 +782,7 @@ button { font-family: inherit; }
   .press { padding: 10px 16px; font-size: 15px; }
   .docket-sound { font-size: 12.5px; }
   .seal-explainer { display: none; }
+  .petition .hint { display: none; }
   .medal-stage { width: min(24vh, 66vw); }
   .phase-awarded .medal-stage { width: min(30vh, 52vw); }
   .masthead .sub { font-size: 12.5px; }
@@ -781,7 +799,6 @@ button { font-family: inherit; }
   .seal-face { font-size: 13px; }
   .seal-grid { gap: 6px 4px; }
   .seal-explainer { font-size: 11px; margin-top: 4px; }
-  .seal-why { display: none; }
   .ach-input, .who-input { padding: 7px 10px; }
   .press { padding: 12px 16px; }
   .docket-sound { min-height: 34px; padding: 5px 14px; }
