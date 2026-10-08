@@ -1,0 +1,165 @@
+* { margin: 0; box-sizing: border-box; }
+
+:root {
+  --baize: #121b16;
+  --baize-deep: #0b120e;
+  --parchment: #f0e6cd;
+  --gold: #c9a227;
+  --gold-hi: #eccf7d;
+  --wax: #8e2b2b;
+  --ink: #191510;
+}
+
+body {
+  background: var(--baize-deep);
+  color: var(--parchment);
+  font-family: 'EB Garamond', serif;
+  min-height: 100dvh;
+}
+
+.scene {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 24px;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 30%, rgba(233,205,120,0.09), transparent 70%),
+    var(--baize-deep);
+}
+
+h1 {
+  font-family: 'IM Fell English SC', serif;
+  font-size: clamp(28px, 4vw, 44px);
+  letter-spacing: 0.12em;
+  color: var(--gold-hi);
+  font-weight: 400;
+}
+.sub {
+  font-family: 'IM Fell English', serif;
+  font-style: italic;
+  opacity: 0.7;
+  font-size: 17px;
+}
+.masthead { text-align: center; margin-bottom: 8px; }
+
+.medal-stage {
+  width: min(62vmin, 560px);
+  aspect-ratio: 1;
+  cursor: grab;
+}
+.medal-stage:active { cursor: grabbing; }
+.medal-stage canvas { width: 100%; height: 100%; display: block; }
+.stage-wrap { display: grid; place-items: center; flex: 1; }
+
+.docket {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(560px, 92vw);
+  padding: 18px;
+}
+.ach-input {
+  font-family: 'IM Fell English', serif;
+  font-style: italic;
+  font-size: 19px;
+  padding: 14px 18px;
+  background: rgba(240,230,205,0.06);
+  border: 1px solid rgba(201,162,39,0.35);
+  border-radius: 2px;
+  color: var(--parchment);
+  outline: none;
+  text-align: center;
+}
+.ach-input:focus { border-color: var(--gold); }
+.ach-input::placeholder { color: rgba(240,230,205,0.35); }
+
+.seal-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.seal {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  width: 74px; height: 74px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  background:
+    radial-gradient(circle at 35% 30%, #b04545, var(--wax) 55%, #5e1a1c);
+  color: #f5e3d0;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.5), inset 0 -3px 6px rgba(0,0,0,0.3);
+  transition: transform 160ms cubic-bezier(0.23,1,0.32,1), filter 160ms;
+}
+.seal:hover { transform: translateY(-2px); }
+.seal:active { transform: scale(0.94); }
+.seal-on {
+  filter: brightness(1.2);
+  box-shadow: 0 0 0 3px rgba(240,230,205,0.25), 0 3px 8px rgba(0,0,0,0.5), inset 0 -3px 6px rgba(0,0,0,0.3);
+}
+
+.press {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 20px;
+  letter-spacing: 0.3em;
+  padding: 16px;
+  background: linear-gradient(180deg, #d8b45a, var(--gold) 40%, #8a6d28);
+  color: #241a05;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #4a3809, 0 8px 20px rgba(0,0,0,0.45);
+  transition: transform 120ms cubic-bezier(0.23,1,0.32,1), box-shadow 120ms;
+}
+.press:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 7px 0 #4a3809, 0 12px 24px rgba(0,0,0,0.45); }
+.press:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #4a3809; }
+.press:disabled { opacity: 0.45; cursor: default; }
+
+/* B — vault */
+.scene-b { flex-direction: row; align-items: stretch; justify-content: center; gap: 48px; }
+.alcove {
+  flex: 1.2;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(ellipse 70% 60% at 50% 40%, rgba(233,205,120,0.12), transparent 75%);
+  border-radius: 240px 240px 12px 12px;
+  border: 1px solid rgba(201,162,39,0.2);
+}
+.dossier {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  max-width: 480px;
+}
+
+/* C — desk */
+.scene-c { flex-direction: row; justify-content: center; gap: 40px; align-items: center; }
+.hang { position: relative; display: grid; place-items: center; }
+.ribbon {
+  position: absolute;
+  top: 0;
+  width: 90px;
+  height: 220px;
+  background: repeating-linear-gradient(90deg, #8e2b2b 0 18px, #f0e6cd 18px 36px, #8e2b2b 36px 54px, #1c3a6e 54px 72px, #8e2b2b 72px 90px);
+  clip-path: polygon(15% 0, 85% 0, 72% 100%, 28% 100%);
+}
+.hang-medal { margin-top: 120px; }
+.hang-medal .medal-stage { width: min(46vmin, 420px); }
+.act {
+  background: var(--parchment);
+  color: var(--ink);
+  padding: 48px 40px;
+  border-radius: 2px;
+  width: min(480px, 92vw);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.act h1 { color: var(--ink); }
+.act .sub { color: rgba(25,21,16,0.7); }
+.act .ach-input { background: rgba(25,21,16,0.05); color: var(--ink); border-color: rgba(25,21,16,0.3); }
+.act .ach-input::placeholder { color: rgba(25,21,16,0.4); }
+
+@media (max-width: 720px) {
+  .scene-b, .scene-c { flex-direction: column; align-items: center; }
+  .alcove { width: 100%; }
+  .dossier, .act { width: 100%; }
+}
