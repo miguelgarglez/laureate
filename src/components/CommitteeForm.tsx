@@ -11,6 +11,7 @@ interface Props {
   setAchievement: (v: string) => void
   setCategory: (c: Category) => void
   onMint: () => void
+  onToggleSound: () => void
   busy: boolean
   soundOn: boolean
 }
@@ -27,12 +28,16 @@ export function CommitteeForm(p: Props) {
 
   return (
     <form
-      className="docket"
+      className="docket petition"
+      aria-label="Petition to the Committee"
       onSubmit={(e) => {
         e.preventDefault()
         if (ready && !p.busy) p.onMint()
       }}
     >
+      <p className="petition-head">
+        <span>Petition to the Committee</span>
+      </p>
       <label className="field" data-guide="achievement">
         <span className="field-tag">The achievement</span>
         <input
@@ -45,20 +50,19 @@ export function CommitteeForm(p: Props) {
           enterKeyHint="done"
         />
       </label>
-      {!p.achievement && (
-        <p className="petition-note">
-          e.g.{' '}
-          <button
-            type="button"
-            className="note-example"
-            onClick={() => p.setAchievement(GHOST_EXAMPLES[ghost])}
-          >
-            “{GHOST_EXAMPLES[ghost]}”
-          </button>
-        </p>
-      )}
+      <p className={`petition-note ${p.achievement ? 'note-hidden' : ''}`} aria-hidden={!!p.achievement}>
+        e.g.{' '}
+        <button
+          type="button"
+          className="note-example"
+          tabIndex={p.achievement ? -1 : 0}
+          onClick={() => p.setAchievement(GHOST_EXAMPLES[ghost])}
+        >
+          “{GHOST_EXAMPLES[ghost]}”
+        </button>
+      </p>
       <label className="field field-who">
-        <span className="field-tag">Conferred upon</span>
+        <span className="field-tag">Conferred upon — or leave blank for the bearer</span>
         <input
           className="who-input"
           value={p.recipient}
@@ -93,6 +97,9 @@ export function CommitteeForm(p: Props) {
       </fieldset>
       <button className="press" data-guide="mint" type="submit" disabled={!ready || p.busy}>
         <span className="press-face">Mint the medal</span>
+      </button>
+      <button type="button" className="docket-sound" onClick={p.onToggleSound} aria-pressed={p.soundOn}>
+        the ceremony’s report: {p.soundOn ? 'sounding' : 'silent'}
       </button>
       {!ready && p.achievement.length > 0 && (
         <p className="hint">A few more words — the Committee requires a real deed.</p>

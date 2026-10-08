@@ -69,7 +69,7 @@ export function ShareBar({ award, onReset }: { award: Award; onReset: () => void
         </button>
         <span className="dispatch-sep" aria-hidden="true">·</span>
         <button className="dlink" onClick={share}>
-          {label('link', 'copy the link', 'link copied')}
+          {label('link', 'share' in navigator ? 'share the award' : 'copy the link', 'link copied')}
         </button>
         <span className="dispatch-sep" aria-hidden="true">·</span>
         <button className="dlink" onClick={copyCitation}>

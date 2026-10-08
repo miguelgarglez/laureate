@@ -18,8 +18,10 @@ const STRIKE = {
   dropEnd: 330,
   embossStart: 420,
   embossEnd: 1080,
-  retractEnd: 1650,
+  dwellEnd: 1240, // the die holds the face for a beat before releasing
+  retractEnd: 1800,
 }
+const DIE_SEAT = -120 // die face-plate bottom bears down onto the planchet's face
 
 const MEDAL_Y = 70 // medal centre below canvas centre, leaving room for the ribbon
 const MEDAL_SCALE = 0.74 // medal drawn at 0.74 of canvas half-size, leaving a baize margin
@@ -46,13 +48,15 @@ interface Mote { x: number; y: number; r: number; vx: number; vy: number; a: num
 interface Speckle { x: number; y: number; len: number; rot: number; a: number }
 
 function drawRibbon(ctx: CanvasRenderingContext2D, t: number, flip: number) {
-  // ribbon hangs into frame once the award is struck; it twists with the medal
+  // ribbon lowers into frame once the award is struck; it twists with the medal
   const drop = (1 - easeOutQuart(clamp01(t))) * -1400
   const skew = Math.sin(flip) * 0.35
   const squeeze = 1 - Math.abs(Math.sin(flip)) * 0.25
   ctx.save()
   ctx.translate(0, MEDAL_Y - 268) // attach where the medal's scaled top edge sits
   ctx.translate(0, drop)
+  ctx.rotate(Math.sin(clamp01(t) * Math.PI * 2.4) * 0.05 * (1 - clamp01(t))) // pendulum settle
+  ctx.globalAlpha = 0.3 + 0.7 * clamp01(t * 3) // fades in as it lowers
   ctx.transform(1, 0, skew, 1, 0, 0)
   ctx.scale(squeeze, 1)
   const topW = 168
@@ -86,6 +90,12 @@ function drawRibbon(ctx: CanvasRenderingContext2D, t: number, flip: number) {
   sh.addColorStop(1, 'rgba(0,0,0,0.45)')
   ctx.fillStyle = sh
   ctx.fillRect(-topW / 2 - 20, h - 20, topW + 40, -h + 30)
+  // the ribbon climbs into darkness, not into a hard edge
+  const fade = ctx.createLinearGradient(0, h - 20, 0, h + 150)
+  fade.addColorStop(0, 'rgba(6,9,7,0.95)')
+  fade.addColorStop(1, 'rgba(6,9,7,0)')
+  ctx.fillStyle = fade
+  ctx.fillRect(-topW / 2 - 20, h - 20, topW + 40, 170)
   // fold shadow where the ribbon meets the medal
   const fold = ctx.createLinearGradient(0, -26, 0, 0)
   fold.addColorStop(0, 'rgba(0,0,0,0)')
@@ -112,11 +122,15 @@ export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment,
     lastX: 0,
     lastT: 0,
     lastMoveT: 0,
+    downX: 0,
+    downT: 0,
     lastNudge: 0,
     pressY: -1400, // bottom edge of the die in centered canvas units; -1400 = offscreen
     shock: -1,
     squash: 1,
     emboss: 0,
+    flash: -1, // contact light pulse behind the medal
+    bedKick: 0, // anvil recoil on contact
     motes: [] as Mote[],
     speckle: [] as Speckle[],
     idleT: 0,
@@ -207,14 +221,16 @@ export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment,
           s.pressY = -1400 + Math.sin(t / 9) * 6
           s.squash = 1
         } else if (t < STRIKE.dropEnd) {
-          s.pressY = -1400 + easeInCubic((t - STRIKE.dropStart) / (STRIKE.dropEnd - STRIKE.dropStart)) * 1100
+          s.pressY = -1400 + easeInCubic((t - STRIKE.dropStart) / (STRIKE.dropEnd - STRIKE.dropStart)) * (DIE_SEAT + 1400)
         } else {
           if (!s.contactFired) {
             s.contactFired = true
             s.shock = 0
+            s.flash = 0
+            s.bedKick = 1
             onStrikeMoment?.()
           }
-          s.pressY = -300 // die seated on the planchet's top edge
+          s.pressY = DIE_SEAT
           const after = t - STRIKE.dropEnd
           s.squash = 1 - 0.03 * Math.exp(-after / 90) * Math.cos(after / 22)
         }
@@ -223,10 +239,13 @@ export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment,
         } else if (t > STRIKE.embossEnd) {
           s.emboss = 1
         }
-        if (t > STRIKE.embossEnd) {
+        if (t > STRIKE.dwellEnd) {
           // heavier, slower retreat than the drop
-          s.pressY = -300 - easeOutQuart(clamp01((t - STRIKE.embossEnd) / (STRIKE.retractEnd - STRIKE.embossEnd))) * 1100
+          s.pressY = DIE_SEAT - easeOutQuart(clamp01((t - STRIKE.dwellEnd) / (STRIKE.retractEnd - STRIKE.dwellEnd))) * (DIE_SEAT + 1400)
         }
+        if (s.flash >= 0) s.flash += dt / 380
+        if (s.flash > 1) s.flash = -1
+        s.bedKick *= Math.pow(0.994, dt)
         if (s.shock >= 0) s.shock += dt / 700
         if (s.shock > 1) s.shock = -1
       } else {
@@ -240,12 +259,12 @@ export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment,
       }
       s.prevPhase = phase
 
-      // programmatic flip: ease exactly one half-turn to the other face
+      // programmatic flip: ease to the next half-turn — alternates faces on every nudge
       if (flipNudge !== s.lastNudge) {
         s.lastNudge = flipNudge
         if (!s.dragging && phase !== 'idle' && flipNudge > 0) {
-          const base = s.flip % (Math.PI * 2)
-          s.flipAnim = { from: s.flip, to: s.flip - base + Math.PI, t0: now }
+          const next = Math.floor(s.flip / Math.PI + 0.5) * Math.PI + Math.PI
+          s.flipAnim = { from: s.flip, to: next, t0: now }
           s.flipVel = 0
           if (!flipFired.current) { flipFired.current = true; onFirstFlip?.() }
         }
@@ -301,6 +320,16 @@ export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment,
         ctx.stroke()
       }
 
+      // contact flash: a pulse of forge-light behind the medal
+      if (s.flash >= 0) {
+        const fg = ctx.createRadialGradient(0, MEDAL_Y - 40, 10, 0, MEDAL_Y - 40, 520)
+        fg.addColorStop(0, `rgba(255,232,170,${(0.55 * (1 - s.flash)).toFixed(3)})`)
+        fg.addColorStop(0.5, `rgba(233,190,90,${(0.22 * (1 - s.flash)).toFixed(3)})`)
+        fg.addColorStop(1, 'rgba(0,0,0,0)')
+        ctx.fillStyle = fg
+        ctx.fillRect(-512, -512, 1024, 1024)
+      }
+
       // dust motes in the light cone
       for (const m of s.motes) {
         m.x += m.vx * dt / 16
@@ -318,15 +347,29 @@ export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment,
         ctx.fill()
       }
 
-      // the anvil bed: a solid iron collar the planchet rests in
+      // the anvil: a solid iron collar with a visible front edge, recoiling on impact
+      const kick = s.bedKick * 14
       ctx.save()
-      ctx.translate(0, MEDAL_Y + 352)
+      ctx.translate(0, MEDAL_Y + 352 + kick)
+      // skirt — the anvil's front face, giving the bed thickness
+      ctx.save()
+      ctx.translate(0, 26)
       ctx.scale(1, 0.2)
-      // bed face
+      const sk = ctx.createLinearGradient(0, -200, 0, 460)
+      sk.addColorStop(0, 'rgba(38,40,44,0.95)')
+      sk.addColorStop(0.4, 'rgba(20,21,24,0.9)')
+      sk.addColorStop(1, 'rgba(0,0,0,0)')
+      ctx.fillStyle = sk
+      ctx.beginPath()
+      ctx.arc(0, 0, 460, 0, Math.PI)
+      ctx.fill()
+      ctx.restore()
+      ctx.scale(1, 0.2)
+      // top face — cool iron, lighter where the light falls
       const bg = ctx.createRadialGradient(0, -60, 60, 0, -30, 480)
-      bg.addColorStop(0, 'rgba(46,38,22,0.9)')
-      bg.addColorStop(0.62, 'rgba(24,20,12,0.92)')
-      bg.addColorStop(0.86, 'rgba(14,12,7,0.95)')
+      bg.addColorStop(0, 'rgba(64,66,72,0.9)')
+      bg.addColorStop(0.62, 'rgba(34,35,39,0.92)')
+      bg.addColorStop(0.86, 'rgba(20,21,24,0.95)')
       bg.addColorStop(1, 'rgba(0,0,0,0)')
       ctx.fillStyle = bg
       ctx.beginPath()
@@ -334,8 +377,8 @@ export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment,
       ctx.fill()
       // machined rim catching the light along its upper edge
       const rim = ctx.createLinearGradient(0, -120, 0, 60)
-      rim.addColorStop(0, 'rgba(216,180,90,0.5)')
-      rim.addColorStop(0.45, 'rgba(140,110,50,0.28)')
+      rim.addColorStop(0, 'rgba(190,200,214,0.55)')
+      rim.addColorStop(0.45, 'rgba(110,116,128,0.3)')
       rim.addColorStop(1, 'rgba(0,0,0,0)')
       ctx.strokeStyle = rim
       ctx.lineWidth = 30
@@ -373,25 +416,31 @@ export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment,
       })
       ctx.restore()
 
-      // the die descends out of the dark at the top of the frame
+      // the die descends out of the dark at the top of the frame — cool tool steel
       if (s.pressY > -1390) {
         const pw = 480, ph = 150
         ctx.save()
         ctx.translate(0, s.pressY - ph) // s.pressY is canvas coords
         const pg = ctx.createLinearGradient(-pw / 2, 0, pw / 2, 0)
-        pg.addColorStop(0, '#3a2c12')
-        pg.addColorStop(0.2, '#8a6d28')
-        pg.addColorStop(0.5, '#d8b45a')
-        pg.addColorStop(0.8, '#8a6d28')
-        pg.addColorStop(1, '#2c220e')
+        pg.addColorStop(0, '#1e2023')
+        pg.addColorStop(0.2, '#4a4e55')
+        pg.addColorStop(0.5, '#8b919c')
+        pg.addColorStop(0.8, '#4a4e55')
+        pg.addColorStop(1, '#141518')
         ctx.fillStyle = pg
+        // shaft rising into the dark
         ctx.fillRect(-pw * 0.18, -320, pw * 0.36, 320)
+        // die head with a slight bevel
         ctx.beginPath()
         ctx.roundRect(-pw / 2, 0, pw, ph, 14)
         ctx.fill()
-        ctx.fillStyle = 'rgba(20,14,4,0.55)'
+        // darker face-plate — the working surface that meets the planchet
+        const fg2 = ctx.createLinearGradient(0, ph - 26, 0, ph)
+        fg2.addColorStop(0, 'rgba(12,13,15,0.0)')
+        fg2.addColorStop(1, 'rgba(12,13,15,0.85)')
+        ctx.fillStyle = fg2
         ctx.beginPath()
-        ctx.roundRect(-pw / 2, ph - 24, pw, 24, 8)
+        ctx.roundRect(-pw / 2, ph - 26, pw, 26, 10)
         ctx.fill()
         ctx.restore()
         // darkness above: the die emerges from shadow, never clipped
@@ -447,6 +496,8 @@ export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment,
         s.dragPointer = e.pointerId
         s.lastX = e.clientX
         s.lastMoveT = e.timeStamp
+        s.downX = e.clientX
+        s.downT = e.timeStamp
         s.flipVel = 0
         s.flipAnim = null
         el.setPointerCapture(e.pointerId)
@@ -456,6 +507,14 @@ export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment,
       if (e.pointerId !== s.dragPointer) return
       s.dragging = false
       s.dragPointer = -1
+      // a tap with no drag turns the medal to its other face
+      const moved = Math.abs(e.clientX - s.downX)
+      if (moved < 6 && e.timeStamp - s.downT < 450 && phase === 'awarded') {
+        const next = Math.floor(s.flip / Math.PI + 0.5) * Math.PI + Math.PI
+        s.flipAnim = { from: s.flip, to: next, t0: performance.now() }
+        s.flipVel = 0
+        if (!flipFired.current) { flipFired.current = true; onFirstFlip?.() }
+      }
     }
     el.addEventListener('pointermove', move)
     el.addEventListener('pointerdown', down)

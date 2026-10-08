@@ -106,10 +106,10 @@ export default function App() {
 
   useEffect(() => () => clearTimeout(ceremonyTimer.current), [])
 
-  // FLIP the medal when the layout shifts on award — desktop only
+  // FLIP the medal when the layout shifts on award — all viewports
   useEffect(() => {
     const el = stageRef.current
-    if (!el || !flipFrom.current || reduced || window.innerWidth < 980) return
+    if (!el || !flipFrom.current || reduced) return
     const now = el.getBoundingClientRect()
     const from = flipFrom.current
     flipFrom.current = null
@@ -209,22 +209,22 @@ export default function App() {
             onFirstFlip={() => setHintDone(true)}
             reducedMotion={reduced}
           />
-          {phase === 'awarded' && (
-            <div className="stage-hints">
-              {!hintDone && !reduced && (
-                <p className="drag-hint">The medal takes a spin — drag it.</p>
-              )}
-              <button
-                className="slink slink-dim flip-btn"
-                onClick={() => setFlipNudge((n) => n + 1)}
-              >
-                Turn it over
-              </button>
-            </div>
-          )}
         </div>
 
         <div className="side-col">
+          {phase === 'awarded' && (
+            <div className="stage-hints">
+              {!hintDone && !reduced && (
+                <p className="drag-hint">It spins — drag it, or tap to turn it over.</p>
+              )}
+              <button
+                className="flip-btn"
+                onClick={() => setFlipNudge((n) => n + 1)}
+              >
+                turn it over
+              </button>
+            </div>
+          )}
           {badHash && (
             <div className="objection" role="alert">
               <p className="obj-title">The Committee found no record of that award.</p>
@@ -255,6 +255,7 @@ export default function App() {
                 setAchievement={setAchievement}
                 setCategory={setCategory}
                 onMint={onMint}
+                onToggleSound={toggleSound}
                 busy={phase === 'striking'}
                 soundOn={soundOn}
               />
@@ -263,17 +264,6 @@ export default function App() {
           {phase === 'awarded' && award && <ShareBar award={award} onReset={onReset} />}
         </div>
       </main>
-
-      <footer className="foot">
-        <button
-          className="util"
-          onClick={toggleSound}
-          aria-pressed={soundOn}
-          title={soundOn ? 'Sound off' : 'Sound on'}
-        >
-          {soundOn ? 'sound on' : 'sound off'}
-        </button>
-      </footer>
     </div>
   )
 }

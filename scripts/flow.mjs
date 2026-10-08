@@ -14,10 +14,9 @@ page.on('pageerror', (e) => errors.push('pageerror: ' + e.message))
 await page.goto(url, { waitUntil: 'networkidle' })
 await page.waitForTimeout(1200)
 
-// guide visible → skip
-await page.screenshot({ path: `${outdir}/1-guide.png` })
-await page.click('.guide-skip')
-await page.waitForTimeout(400)
+// opening view — no guide scrim; the docket and press bed are visible at once
+await page.screenshot({ path: `${outdir}/1-idle.png` })
+await page.waitForTimeout(200)
 
 // fill the petition
 await page.fill('.ach-input', 'debugging production by closing the laptop')
