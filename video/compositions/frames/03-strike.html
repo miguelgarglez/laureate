@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: 'IM Fell'; src: url('assets/fonts/im-fell-english-latin-400-italic.woff2') format('woff2'); font-style: italic; }
+      @font-face { font-family: 'IM Fell SC'; src: url('assets/fonts/im-fell-english-sc-latin-400-normal.woff2') format('woff2'); }
+      @font-face { font-family: 'EB Garamond'; src: url('assets/fonts/eb-garamond-latin-400-italic.woff2') format('woff2'); font-style: italic; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1080px; overflow: hidden; background: #070b08; }
+      #root { position: absolute; inset: 0; }
+      .plate { position: absolute; inset: 0; }
+      .plate video { width: 106%; height: 106%; left: -3%; top: -3%; position: relative; object-fit: cover; object-position: 50% 55%; }
+      .edge {
+        position: absolute; inset: 34px; border: 1px solid rgba(236, 207, 125, 0.4);
+        pointer-events: none;
+      }
+      .cap {
+        position: absolute; left: 0; right: 0; bottom: 96px; text-align: center;
+        font-family: 'EB Garamond', serif; font-style: italic; font-size: 46px;
+        color: rgba(245, 227, 208, 0.92); text-shadow: 0 2px 18px rgba(0,0,0,.7);
+      }
+      .cap2 {
+        position: absolute; left: 0; right: 0; bottom: 96px; text-align: center;
+        font-family: 'IM Fell SC', serif; font-size: 64px; letter-spacing: 0.3em;
+        color: #eccf7d; text-shadow: 0 2px 22px rgba(0,0,0,.75); opacity: 0;
+      }
+      .cap3 {
+        position: absolute; left: 0; right: 0; bottom: 96px; text-align: center;
+        font-family: 'EB Garamond', serif; font-style: italic; font-size: 42px;
+        color: rgba(245, 227, 208, 0.9); text-shadow: 0 2px 18px rgba(0,0,0,.7); opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" class="frame" data-composition-id="frame-03" data-width="1080" data-height="1080">
+      <div class="plate">
+        <video id="v-strike" muted playsinline data-start="0" data-duration="7" src="assets/footage/strike.mp4" data-media-start="0"></video>
+      </div>
+      <div class="edge"></div>
+      <div class="cap">the Committee deliberates.</div>
+      <div class="cap2">STRUCK.</div>
+      <div class="cap3">the relief keeps the light.</div>
+    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo('#root', { opacity: 0 }, { opacity: 1, duration: 0.35, ease: 'power1.out' }, 0);
+      tl.fromTo('.edge', { opacity: 0 }, { opacity: 1, duration: 0.7 }, 0.1);
+      tl.fromTo('.cap', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 0.25);
+      // impact lands ~1.7s into the footage
+      tl.to('.cap', { opacity: 0, duration: 0.18 }, 1.55);
+      tl.fromTo('.cap2', { opacity: 0, scale: 1.14 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'power3.out' }, 1.72);
+      tl.fromTo('.plate video', { filter: 'brightness(1.35)' }, { filter: 'brightness(1)', duration: 0.55, ease: 'power2.out' }, 1.72);
+      tl.to('.cap2', { opacity: 0, duration: 0.4 }, 4.0);
+      tl.fromTo('.cap3', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 4.4);
+      tl.to('#root', { opacity: 0, duration: 0.45, ease: 'power1.in' }, 6.55);
+      window.__timelines['frame-03'] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

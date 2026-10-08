@@ -1,0 +1,137 @@
+{
+  "typography": [
+    {
+      "role": "display",
+      "fontFamily": "IM Fell English SC",
+      "fontSize": "46px",
+      "fontWeight": "400",
+      "lineHeight": "normal",
+      "letterSpacing": "6.44px",
+      "color": "#ECCF7D",
+      "sampleText": "Laureate"
+    },
+    {
+      "role": "body",
+      "fontFamily": "IM Fell English",
+      "fontSize": "17px",
+      "fontWeight": "400",
+      "lineHeight": "normal",
+      "letterSpacing": "normal",
+      "color": "#F0E6CD",
+      "sampleText": "Award someone a gold medal for something gloriously minor."
+    },
+    {
+      "role": "label",
+      "fontFamily": "EB Garamond",
+      "fontSize": "13.5px",
+      "fontWeight": "400",
+      "lineHeight": "normal",
+      "letterSpacing": "1.08px",
+      "color": "#6B5320",
+      "sampleText": "The achievement"
+    }
+  ],
+  "spacing": {
+    "observed": [
+      2,
+      5,
+      6,
+      8,
+      20,
+      68
+    ],
+    "baseUnit": 4
+  },
+  "radius": [
+    "6px"
+  ],
+  "shadows": [
+    {
+      "value": "rgba(200, 206, 216, 0.3) 0px 1px 0px 0px inset, rgb(13, 14, 16) 0px 4px 0px 0px, rgba(0, 0, 0, 0.4) 0px 10px 24px 0px",
+      "count": 1
+    }
+  ],
+  "buttons": [
+    {
+      "label": "“leaving the group chat on read with tot",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#8E2B2B",
+      "padding": "6px 2px",
+      "borderRadius": "0px",
+      "border": "",
+      "boxShadow": "none",
+      "fontSize": "14.5px",
+      "fontWeight": "400",
+      "height": "31px"
+    },
+    {
+      "label": "PhPhysics",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#000000",
+      "padding": "8px 6px",
+      "borderRadius": "6px",
+      "border": "0px none rgb(0, 0, 0)",
+      "boxShadow": "none",
+      "fontSize": "13.3333px",
+      "fontWeight": "400",
+      "height": "92px"
+    },
+    {
+      "label": "Mint the medal",
+      "background": "transparent",
+      "backgroundImage": "linear-gradient(rgb(86, 91, 100), rgb(46, 49, 54) 55%, rgb(25, 27, 30))",
+      "backdropFilter": "",
+      "color": "#ECCF7D",
+      "padding": "15px 18px",
+      "borderRadius": "3px",
+      "border": "1px solid rgba(200, 206, 216, 0.22)",
+      "boxShadow": "rgba(200, 206, 216, 0.3) 0px 1px 0px 0px inset, rgb(13, 14, 16) 0px 4px 0px 0px, rgba(0, 0, 0, 0.4) 0px 10px 24px 0px",
+      "fontSize": "21px",
+      "fontWeight": "400",
+      "height": "59px"
+    },
+    {
+      "label": "Sound: off",
+      "background": "#F0E6CD",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#4D3C18",
+      "padding": "8px 16px",
+      "borderRadius": "999px",
+      "border": "1px solid rgba(107, 83, 32, 0.45)",
+      "boxShadow": "none",
+      "fontSize": "13.5px",
+      "fontWeight": "400",
+      "height": "40px"
+    }
+  ],
+  "cards": [],
+  "nav": {
+    "label": "navigation",
+    "background": "transparent",
+    "backgroundImage": "",
+    "backdropFilter": "",
+    "color": "#F0E6CD",
+    "padding": "24px 20px 2px",
+    "borderRadius": "0px",
+    "border": "0px none rgb(240, 230, 205)",
+    "boxShadow": "none",
+    "fontSize": "16px",
+    "fontWeight": "400",
+    "height": "108px"
+  },
+  "chips": [],
+  "statCells": [],
+  "tabs": [],
+  "backgrounds": [
+    {
+      "value": "radial-gradient(75% 55% at 50% 26%, rgba(233, 205, 120, 0.1), rgba(0, 0, 0, 0) 70%), radial-gradient(120% 90% at 50% 110%, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0) 60%), none",
+      "area": 2073600
+    }
+  ],
+  "glass": []
+}

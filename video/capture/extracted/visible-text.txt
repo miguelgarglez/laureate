@@ -1,0 +1,20 @@
+[h1] Laureate
+[p] Award someone a gold medal for something gloriously minor.
+[span] Petition to the Committee
+[span] The achievement
+[p] e.g.
+[button] remembering every birthday without a single notification
+[span] Conferred upon — or leave blank for the bearer
+[legend] The field of merit
+[span] Physics
+[span] Chemistry
+[span] Medicine
+[span] Literature
+[span] Peace
+[span] Economics
+[span] for the absence of thunder
+[span] The seal changes the medal's emblem and its citation.
+[span] Mint the medal
+[p] The deed first — then the Committee strikes.
+[button] Sound:
+[button] off

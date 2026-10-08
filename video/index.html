@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" data-resolution="square">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        margin: 0; width: 1080px; height: 1080px; overflow: hidden;
+        background: #0b120e;
+      }
+      .clip { position: absolute; inset: 0; }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="28"
+      data-width="1080"
+      data-height="1080"
+    >
+      <div class="clip" data-start="0" data-duration="3.5" data-track-index="0" data-composition-src="compositions/frames/01-hook.html" data-composition-id="frame-01" id="clip-hook"></div>
+      <div class="clip" data-start="3.5" data-duration="5" data-track-index="0" data-composition-src="compositions/frames/02-petition.html" data-composition-id="frame-02" id="clip-petition"></div>
+      <div class="clip" data-start="8.5" data-duration="7" data-track-index="0" data-composition-src="compositions/frames/03-strike.html" data-composition-id="frame-03" id="clip-strike"></div>
+      <div class="clip" data-start="15.5" data-duration="6" data-track-index="0" data-composition-src="compositions/frames/04-award.html" data-composition-id="frame-04" id="clip-award"></div>
+      <div class="clip" data-start="21.5" data-duration="6.5" data-track-index="0" data-composition-src="compositions/frames/05-end.html" data-composition-id="frame-05" id="clip-end"></div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      window.__timelines['main'] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

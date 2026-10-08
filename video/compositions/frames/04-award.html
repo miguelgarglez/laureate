@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: 'EB Garamond'; src: url('assets/fonts/eb-garamond-latin-400-normal.woff2') format('woff2'); }
+      @font-face { font-family: 'EB Garamond'; src: url('assets/fonts/eb-garamond-latin-400-italic.woff2') format('woff2'); font-style: italic; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1080px; overflow: hidden; background: #0b120e; }
+      #root { position: absolute; inset: 0; }
+      .plate {
+        position: absolute; left: 35px; top: 168px;
+        width: 1010px; height: 680px; overflow: hidden;
+        border-top: 1px solid rgba(245, 227, 208, 0.45);
+        border-bottom: 1px solid rgba(245, 227, 208, 0.45);
+      }
+      .plate video { width: 100%; height: 100%; object-fit: cover; object-position: 50% 42%; }
+      .coin {
+        position: absolute; right: 74px; bottom: 170px; width: 300px; height: 300px;
+        border-radius: 50%; overflow: hidden; opacity: 0;
+        border: 1px solid rgba(236, 207, 125, 0.55);
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+      }
+      .coin video { width: 100%; height: 100%; object-fit: cover; }
+      .cap {
+        position: absolute; left: 0; right: 0; bottom: 78px; text-align: center;
+        font-family: 'EB Garamond', serif; font-style: italic; font-size: 44px;
+        color: rgba(245, 227, 208, 0.92);
+      }
+      .num {
+        position: absolute; left: 74px; top: 96px;
+        font-family: 'EB Garamond', serif; font-size: 24px; letter-spacing: 0.3em;
+        color: rgba(236, 207, 125, 0.75); text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" class="frame" data-composition-id="frame-04" data-width="1080" data-height="1080">
+      <div class="num">no. 1839 · mmxxvi</div>
+      <div class="plate">
+        <video id="v-award" muted playsinline data-start="0" data-duration="6" src="assets/footage/award.mp4" data-media-start="2.2"></video>
+      </div>
+      <div class="coin">
+        <video id="v-coin" muted playsinline data-start="0" data-duration="6" src="assets/footage/medal.mp4" data-media-start="2.6"></video>
+      </div>
+      <div class="cap">spins. flips. keeps its serial on the back.</div>
+    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo('#root', { opacity: 0 }, { opacity: 1, duration: 0.45, ease: 'power1.out' }, 0);
+      tl.fromTo('.num', { opacity: 0 }, { opacity: 1, duration: 0.6 }, 0.2);
+      tl.fromTo('.plate', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' }, 0.15);
+      tl.fromTo('.cap', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 0.5);
+      // coin inset rises while the medal flips inside it
+      tl.fromTo('.coin', { opacity: 0, y: 30, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: 'back.out(1.6)' }, 2.4);
+      tl.to('#root', { opacity: 0, duration: 0.45, ease: 'power1.in' }, 5.55);
+      window.__timelines['frame-04'] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

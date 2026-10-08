@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: 'IM Fell SC'; src: url('assets/fonts/im-fell-english-sc-latin-400-normal.woff2') format('woff2'); }
+      @font-face { font-family: 'EB Garamond'; src: url('assets/fonts/eb-garamond-latin-400-normal.woff2') format('woff2'); }
+      @font-face { font-family: 'EB Garamond'; src: url('assets/fonts/eb-garamond-latin-400-italic.woff2') format('woff2'); font-style: italic; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1080px; overflow: hidden; background: #0b120e; }
+      #root { position: absolute; inset: 0; }
+      .plate { position: absolute; inset: 0; overflow: hidden; }
+      .plate video { width: 104%; height: 104%; left: -2%; top: -2%; position: relative; object-fit: cover; transform-origin: 50% 42%; }
+      .vignette {
+        position: absolute; inset: 0;
+        background:
+          radial-gradient(ellipse 130% 105% at 50% 40%, transparent 42%, rgba(6, 10, 7, 0.55) 78%, rgba(6, 10, 7, 0.92) 100%),
+          linear-gradient(to top, rgba(6, 10, 7, 0.88) 0%, transparent 30%);
+      }
+      .cap {
+        position: absolute; left: 0; right: 0; bottom: 118px;
+        text-align: center; color: #eccf7d;
+        font-family: 'IM Fell SC', serif; font-size: 52px; letter-spacing: 0.14em;
+        text-shadow: 0 2px 24px rgba(0,0,0,.6);
+      }
+      .cap .l2 { display: block; font-size: 54px; letter-spacing: 0.1em; color: #f5e3d0; margin-top: 10px; }
+      .rule {
+        position: absolute; left: 540px; bottom: 292px; width: 1px; height: 56px;
+        background: linear-gradient(to bottom, transparent, rgba(236, 207, 125, 0.9));
+      }
+      .kicker {
+        position: absolute; left: 0; right: 0; bottom: 306px; text-align: center;
+        font-family: 'EB Garamond', serif; font-style: italic; font-size: 30px; color: rgba(245, 227, 208, 0.82);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" class="frame" data-composition-id="frame-01" data-width="1080" data-height="1080">
+      <div class="plate">
+        <video id="v-medal" muted playsinline data-start="0" data-duration="3.5" src="assets/footage/medal.mp4" data-media-start="0.2"></video>
+      </div>
+      <div class="vignette"></div>
+      <div class="rule"></div>
+      <div class="kicker">a mint for the browser</div>
+      <div class="cap">FOR EXTREMELY<span class="l2">SPECIFIC ACHIEVEMENTS</span></div>
+    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo('.plate video', { scale: 1.12 }, { scale: 1.02, duration: 3.5, ease: 'none' }, 0);
+      tl.fromTo('#root', { opacity: 0 }, { opacity: 1, duration: 0.45, ease: 'power1.out' }, 0);
+      tl.fromTo('.kicker', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, 0.8);
+      tl.fromTo('.cap', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' }, 1.0);
+      tl.fromTo('.rule', { scaleY: 0, transformOrigin: 'bottom' }, { scaleY: 1, duration: 0.6, ease: 'power2.out' }, 0.9);
+      tl.to('#root', { opacity: 0, duration: 0.4, ease: 'power1.in' }, 3.1);
+      window.__timelines['frame-01'] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
