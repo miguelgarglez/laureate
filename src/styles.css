@@ -184,7 +184,16 @@ button { font-family: inherit; }
 /* ------- the petition docket ------- */
 
 .docket { transition: opacity 260ms ease, transform 260ms ease; }
-.phase-striking .docket { opacity: 0.25; transform: translateY(6px); pointer-events: none; }
+.phase-striking .docket {
+  /* the petition is fed into the mint */
+  transition: transform 520ms var(--ease-drawer), opacity 380ms ease 120ms;
+  opacity: 0;
+  transform: translateY(-34px) rotate(-0.6deg);
+  pointer-events: none;
+}
+@media (min-width: 981px) {
+  .phase-striking .docket { transform: translateX(72px) rotate(-0.6deg); }
+}
 
 .petition {
   position: relative;

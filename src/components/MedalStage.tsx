@@ -23,6 +23,7 @@ const STRIKE = {
   retractEnd: 1800,
 }
 const DIE_SEAT = -120 // die face-plate bottom bears down onto the planchet's face
+const DIE_PARK = -300 // ram parked: die head hangs just clear of the planchet
 
 const MEDAL_Y = 70 // medal centre below canvas centre, leaving room for the ribbon
 const MEDAL_SCALE = 0.74 // press scale: planchet sits inside the tooling with baize margin
@@ -226,8 +227,9 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
         const t = now - s.strikeT0
         if (t > STRIKE.embossEnd && s.sweep < 0) s.sweep = 0
         if (t < STRIKE.dropStart) {
-          // anticipation: the die shudders at the top of its stroke
-          s.pressY = -1400 + Math.sin(t / 9) * 6
+          // anticipation: the parked ram retracts into the dark, shuddering
+          const k = easeInCubic(clamp01(t / STRIKE.dropStart))
+          s.pressY = DIE_PARK - k * (DIE_PARK + 1400) + Math.sin(t / 9) * 6 * (1 - k)
           s.squash = 1
         } else if (t < STRIKE.dropEnd) {
           s.pressY = -1400 + easeInCubic((t - STRIKE.dropStart) / (STRIKE.dropEnd - STRIKE.dropStart)) * (DIE_SEAT + 1400)
@@ -307,6 +309,9 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
       // display scale once struck — the medal fills the stage for inspection
       const targetScale = phase === 'awarded' ? AWARD_SCALE : MEDAL_SCALE
       s.medalScale += (targetScale - s.medalScale) * Math.min(1, dt / 350)
+
+      // idle: the ram sits parked just above the planchet, breathing faintly
+      if (phase === 'idle') s.pressY = DIE_PARK + Math.sin(s.idleT / 900) * 2
 
       // breathing
       const breathe = phase === 'idle' ? 1 + Math.sin(s.idleT / 2400) * 0.004 : 1
@@ -496,7 +501,7 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
         ctx.restore()
       }
 
-      // the die descends out of the dark at the top of the frame — cool tool steel
+      // the die head hangs below the crosshead — cool tool steel
       if (s.pressY > -1390) {
         const pw = 480, ph = 150
         ctx.save()

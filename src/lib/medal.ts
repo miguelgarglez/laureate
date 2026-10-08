@@ -410,9 +410,9 @@ export class MedalRenderer {
     ctx.scale(facing, 1)
 
     if (!face || spec.emboss < 1) {
-      // base disc
+      // base disc — a machined blank: flatter highlight, faint turning grooves
       const g = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r)
-      g.addColorStop(0, '#f2dd9a')
+      g.addColorStop(0, '#e6cd83')
       g.addColorStop(0.55, GOLD)
       g.addColorStop(0.9, GOLD_MID)
       g.addColorStop(1, GOLD_LO)
@@ -423,6 +423,14 @@ export class MedalRenderer {
       ctx.lineWidth = size * 0.008
       arc(ctx, 0, 0, r * 0.94)
       ctx.stroke()
+      if (!face) {
+        ctx.strokeStyle = 'rgba(110, 85, 16, 0.22)'
+        ctx.lineWidth = size * 0.003
+        for (const rr of [0.5, 0.62, 0.74]) {
+          arc(ctx, 0, 0, r * rr)
+          ctx.stroke()
+        }
+      }
     }
 
     if (face) {
