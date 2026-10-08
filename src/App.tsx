@@ -186,24 +186,25 @@ export default function App() {
 
       <footer className="foot">
         <span>Struck locally — no committee was contacted.</span>
-        <span className="foot-utils">
-          <button
-            className="util"
-            onClick={toggleSound}
-            aria-pressed={soundOn}
-            title={soundOn ? 'Sound off' : 'Sound on'}
-          >
-            {soundOn ? 'Sound on' : 'Sound off'}
-          </button>
-          <button
-            className="util"
-            onClick={() => setShowGuide(true)}
-            title="Replay the first steps"
-          >
-            ?
-          </button>
-        </span>
       </footer>
+
+      <div className="foot-utils">
+        <button
+          className="util"
+          onClick={toggleSound}
+          aria-pressed={soundOn}
+          title={soundOn ? 'Sound off' : 'Sound on'}
+        >
+          {soundOn ? 'Sound on' : 'Sound off'}
+        </button>
+        <button
+          className="util"
+          onClick={() => setShowGuide(true)}
+          title="Replay the first steps"
+        >
+          ?
+        </button>
+      </div>
 
       {guideStep < 2 && !badHash && (
         <Guide
