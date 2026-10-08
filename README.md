@@ -2,6 +2,8 @@
 
 ![Laureate](docs/hero.png)
 
+[![Watch the 28-second launch film](docs/launch-poster.png)](docs/launch.mp4)
+
 **Mint a Nobel-style gold medal and diploma for anyone's absurd achievement.**
 
 **Live:** https://laureate-ivory.vercel.app
