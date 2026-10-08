@@ -356,6 +356,21 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
         ctx.restore()
       }
 
+      // anticipation light: forge-glow pools on the bed as the ram commits
+      if (phase === 'striking') {
+        const t2 = now - s.strikeT0
+        const glow = t2 < STRIKE.dropEnd
+          ? clamp01(t2 / STRIKE.dropEnd)
+          : Math.max(0, 1 - (t2 - STRIKE.dropEnd) / 800)
+        if (glow > 0) {
+          const gg = ctx.createRadialGradient(0, FLAT_Y - 60, 10, 0, FLAT_Y - 60, 340)
+          gg.addColorStop(0, `rgba(255,200,110,${(0.22 * glow).toFixed(3)})`)
+          gg.addColorStop(1, 'rgba(0,0,0,0)')
+          ctx.fillStyle = gg
+          ctx.fillRect(-380, FLAT_Y - 380, 760, 560)
+        }
+      }
+
       // contact flash: a pulse of forge-light over the work surface
       if (s.flash >= 0) {
         const fg = ctx.createRadialGradient(0, s.medalY - 120, 10, 0, s.medalY - 120, 520)
@@ -482,9 +497,12 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
       })
       ctx.restore()
 
-      // anvil lip: the planchet sits INSIDE the die bed, not on top of it
-      if (s.tilt < 0.9) {
+      // anvil lip: the planchet sits INSIDE the die bed, not on top of it.
+      // fades out as the medal tilts up — it may only ever hide metal behind the bed
+      const lipA = clamp01((0.62 - s.tilt) / 0.22)
+      if (lipA > 0) {
         ctx.save()
+        ctx.globalAlpha = lipA
         ctx.translate(0, s.medalY + 95 + kick)
         ctx.scale(1, 0.16)
         const lip = ctx.createLinearGradient(0, -90, 0, 90)
@@ -523,7 +541,7 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
 
       // the die head hangs below the crosshead — cool tool steel
       if (s.pressY > -1390) {
-        const pw = 480, ph = 150
+        const pw = 640, ph = 168
         ctx.save()
         ctx.translate(0, s.pressY - ph) // s.pressY is canvas coords
         const pg = ctx.createLinearGradient(-pw / 2, 0, pw / 2, 0)
@@ -535,7 +553,7 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
         ctx.fillStyle = pg
         // shaft rising into the crosshead
         ctx.fillRect(-pw * 0.18, -800, pw * 0.36, 800)
-        // die head with a slight bevel
+        // die head with a slight bevel — wide enough to cover the blank's face
         ctx.beginPath()
         ctx.roundRect(-pw / 2, 0, pw, ph, 14)
         ctx.fill()
@@ -547,14 +565,30 @@ export function MedalStage({ award, category, phase, strikeKey, flipNudge, onStr
         ctx.beginPath()
         ctx.roundRect(-pw / 2, ph - 26, pw, 26, 10)
         ctx.fill()
-        // the field's relief engraved on the die face — the same mark it strikes
+        // the engraved boss on the die's face — the same mark it strikes
         ctx.save()
-        ctx.translate(0, ph * 0.5)
-        ctx.strokeStyle = ctx.fillStyle = 'rgba(10,11,13,0.78)'
-        emblem(ctx, 100, CATEGORIES[category].emblem)
-        ctx.strokeStyle = ctx.fillStyle = 'rgba(200,206,216,0.22)'
+        ctx.translate(0, ph / 2)
+        const boss = ctx.createRadialGradient(-14, -18, 6, 0, 0, 72)
+        boss.addColorStop(0, '#5a5f68')
+        boss.addColorStop(0.7, '#33363c')
+        boss.addColorStop(1, '#1b1d20')
+        ctx.fillStyle = boss
+        ctx.beginPath()
+        ctx.arc(0, 0, 68, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.strokeStyle = 'rgba(10,11,13,0.85)'
+        ctx.lineWidth = 5
+        ctx.stroke()
+        ctx.strokeStyle = 'rgba(190,196,206,0.3)'
+        ctx.lineWidth = 1.6
+        ctx.beginPath()
+        ctx.arc(0, 0, 61, 0, Math.PI * 2)
+        ctx.stroke()
+        ctx.strokeStyle = ctx.fillStyle = 'rgba(8,9,11,0.85)'
+        emblem(ctx, 38, CATEGORIES[category].emblem)
+        ctx.strokeStyle = ctx.fillStyle = 'rgba(200,206,216,0.28)'
         ctx.translate(0, -2)
-        emblem(ctx, 100, CATEGORIES[category].emblem)
+        emblem(ctx, 38, CATEGORIES[category].emblem)
         ctx.restore()
         ctx.restore()
         // darkness above: the die emerges from shadow, never clipped

@@ -96,7 +96,7 @@ export function CommitteeForm(p: Props) {
         </div>
         <p className="seal-explainer">
           <span className="seal-motto">{CATEGORIES[p.category].motto}.</span>
-          <span className="seal-why"> Changes the medal's emblem and its citation.</span>
+          <span className="seal-why"> The seal changes the medal's emblem and its citation.</span>
         </p>
       </fieldset>
       <button className="press" data-guide="mint" type="submit" disabled={!ready || p.busy}>

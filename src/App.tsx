@@ -139,16 +139,24 @@ export default function App() {
     if (phase === 'striking') return
     const a = mint({ recipient, achievement, category })
     setAward(a)
-    setPhase('striking')
-    setStrikeKey((k) => k + 1)
     setFlipNudge(0)
     setHintDone(false)
     history.replaceState(null, '', '#a=' + encodeAward(a))
+    // on short screens the mint button sits below the press — bring the whole
+    // machine into view before the strike, or the visitor misses it
+    const stage = stageRef.current
+    const offscreen = !!stage && stage.getBoundingClientRect().top < 8
+    const delay = offscreen ? (reduced ? 0 : 620) : 0
+    if (offscreen) stage.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' })
     ceremonyTimer.current = window.setTimeout(() => {
-      flipFrom.current = stageRef.current?.getBoundingClientRect() ?? null
-      setPhase('awarded')
-      shimmer(soundPref())
-    }, reduced ? 300 : STRIKE_MS)
+      setPhase('striking')
+      setStrikeKey((k) => k + 1)
+      ceremonyTimer.current = window.setTimeout(() => {
+        flipFrom.current = stageRef.current?.getBoundingClientRect() ?? null
+        setPhase('awarded')
+        shimmer(soundPref())
+      }, reduced ? 300 : STRIKE_MS)
+    }, delay)
   }, [phase, recipient, achievement, category, reduced])
 
   const onContact = useCallback(() => {

@@ -116,8 +116,9 @@ button { font-family: inherit; }
   /* the mint stays anchored right; the petition's slot becomes the diploma's */
   .phase-awarded .side-col { max-width: 560px; }
   .phase-striking .medal-stage {
-    transform: scale(1.05);
-    transition: transform 450ms var(--ease-drawer);
+    /* the camera leans into the contact point */
+    transform: scale(1.12) translateY(-2%);
+    transition: transform 500ms var(--ease-drawer);
   }
 }
 
@@ -140,7 +141,8 @@ button { font-family: inherit; }
 .medal-stage:active { cursor: grabbing; }
 .medal-stage canvas { width: 100%; height: 100%; display: block; }
 
-.phase-awarded .medal-stage { width: min(44vmin, 360px); }
+/* the mint keeps one footprint; the medal grows inside the frame, not the stage */
+.phase-awarded .medal-stage { width: min(46vmin, 400px); }
 
 .stage-hints {
   /* in-flow beneath the canvas — an inscription plate on the baize */
@@ -191,14 +193,11 @@ button { font-family: inherit; }
 
 .docket { transition: opacity 260ms ease, transform 260ms ease; }
 .phase-striking .docket {
-  /* the petition is fed into the mint */
-  transition: transform 520ms var(--ease-drawer), opacity 380ms ease 120ms;
-  opacity: 0;
-  transform: translateY(-34px) rotate(-0.6deg);
+  /* the paper stays through the strike — the Committee is reading it;
+     the diploma replaces it in place when the medal is done */
+  opacity: 0.3;
+  transform: translateY(3px) rotate(-0.6deg);
   pointer-events: none;
-}
-@media (min-width: 981px) {
-  .phase-striking .docket { transform: translateX(72px) rotate(-0.6deg); }
 }
 
 .petition {
@@ -479,7 +478,8 @@ button { font-family: inherit; }
   pointer-events: none;
 }
 .unfurl .diploma-inner {
-  animation: unfurl 800ms var(--ease-drawer) 420ms both;
+  /* the paper arrives after the medal settles — the payoff is sequenced */
+  animation: unfurl 800ms var(--ease-drawer) 1050ms both;
   transform-origin: 50% 0%;
 }
 @keyframes unfurl {
@@ -496,7 +496,7 @@ button { font-family: inherit; }
   top: 0;
   height: 30px;
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.4), transparent);
-  animation: unfurl-edge 800ms var(--ease-drawer) 420ms both;
+  animation: unfurl-edge 800ms var(--ease-drawer) 1050ms both;
   pointer-events: none;
 }
 @keyframes unfurl-edge {
@@ -516,7 +516,7 @@ button { font-family: inherit; }
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
   z-index: 4;
   pointer-events: none;
-  animation: unfurl-lip 800ms var(--ease-drawer) 420ms both;
+  animation: unfurl-lip 800ms var(--ease-drawer) 1050ms both;
 }
 @keyframes unfurl-lip {
   0% { top: 3%; opacity: 0; transform: scaleY(0.4); }
@@ -599,8 +599,8 @@ button { font-family: inherit; }
 
 /* short paper arrival, then two text groups — read complete thoughts sooner */
 .unfurl .dip-line, .unfurl .dip-foot, .unfurl .dip-colophon { opacity: 0; animation: press-in 460ms var(--ease-out) forwards; }
-.unfurl .dip-l1, .unfurl .dip-l2, .unfurl .dip-l3, .unfurl .dip-cite { animation-delay: 620ms; }
-.unfurl .dip-l4, .unfurl .dip-foot, .unfurl .dip-colophon { animation-delay: 880ms; }
+.unfurl .dip-l1, .unfurl .dip-l2, .unfurl .dip-l3, .unfurl .dip-cite { animation-delay: 1250ms; }
+.unfurl .dip-l4, .unfurl .dip-foot, .unfurl .dip-colophon { animation-delay: 1510ms; }
 @keyframes press-in {
   from { opacity: 0; transform: translateY(7px); filter: blur(1.5px); }
   to { opacity: 1; transform: none; filter: none; }
@@ -634,7 +634,7 @@ button { font-family: inherit; }
 }
 .unfurl .wax-seal {
   opacity: 0;
-  animation: seal-squash 520ms cubic-bezier(0.34, 1.4, 0.5, 1) 1150ms forwards;
+  animation: seal-squash 520ms cubic-bezier(0.34, 1.4, 0.5, 1) 1780ms forwards;
 }
 @keyframes seal-squash {
   0% { opacity: 0; transform: scale(1.6) rotate(-18deg); }
@@ -668,7 +668,7 @@ button { font-family: inherit; }
   gap: 8px;
   margin-top: 14px;
   z-index: 3;
-  animation: fade-up 460ms var(--ease-out) 1.15s both;
+  animation: fade-up 460ms var(--ease-out) 1.9s both;
 }
 .dispatch-row {
   display: flex;
@@ -713,10 +713,22 @@ button { font-family: inherit; }
 }
 .dlink:hover { color: var(--wax); }
 @media (max-width: 480px) {
-  .dispatch-row { gap: 8px; padding: 6px 12px; }
+  .dispatch-row { gap: 8px; padding: 6px 12px; flex-wrap: wrap; justify-content: center; }
   .dispatch-tab { padding: 9px 12px; font-size: 12px; letter-spacing: 0.08em; }
   .dlink { font-size: 13px; }
   .ach-input, .who-input { font-size: 16px; }
+}
+@media (max-width: 360px) {
+  .petition-note {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .wax-seal { width: 44px; height: 44px; right: 10px; bottom: 10px; }
+  .wax-seal span { font-size: 16px; }
+  .dip-foot { padding-right: 50px; }
+  .diploma-inner { padding: 16px 18px; }
 }
 .dispatch .dlink-quiet {
   color: rgba(240, 230, 205, 0.74);
@@ -760,17 +772,17 @@ button { font-family: inherit; }
   .seal-cell { padding: 5px 4px; min-width: 60px; }
   .press { font-size: 16px; padding: 12px 16px; }
   .medal-stage { width: min(36vmin, 74vw); }
-  .phase-awarded .medal-stage { width: min(34vh, 56vw); }
 }
 @media (min-width: 981px) and (max-height: 840px) {
   .medal-stage { width: min(36vmin, 320px); }
-  .phase-awarded .medal-stage { width: min(38vh, 320px); }
+  .phase-awarded .medal-stage { width: min(36vmin, 320px); }
   .diploma-inner { padding: 15px 26px; }
   .dip-head { margin-bottom: 5px; }
   .dip-line { font-size: 15px; }
 }
 @media (max-height: 700px) {
-  .petition { gap: 5px; padding: 11px 20px; }
+  .masthead { padding-top: 4px; }
+  .petition { gap: 5px; padding: 10px 18px; }
   .petition-head { font-size: 12px; }
   .petition-note { margin-top: -8px; font-size: 12.5px; }
   .field-tag { font-size: 11px; margin-bottom: 1px; }
@@ -778,19 +790,26 @@ button { font-family: inherit; }
   .seal { width: 36px; }
   .seal-face { font-size: 13px; }
   .seal-name { font-size: 10.5px; }
-  .seal-cell { padding: 4px 4px; min-width: 54px; }
-  .press { padding: 10px 16px; font-size: 15px; }
+  .seal-cell { padding: 3px 4px; min-width: 54px; }
+  .press { padding: 9px 16px; font-size: 15px; }
   .docket-sound { font-size: 12.5px; }
-  .seal-explainer { display: none; }
-  .petition .hint { display: none; }
-  .medal-stage { width: min(24vh, 66vw); }
-  .phase-awarded .medal-stage { width: min(30vh, 52vw); }
+  /* guidance survives short heights — the page scrolls, the ceremony
+     scrolls itself into view; only the motto's first clause is trimmed */
+  .seal-motto { display: none; }
+  .seal-explainer { font-size: 10.5px; margin-top: 3px; }
+  .petition .hint { font-size: 11px; margin-top: -1px; }
+  .medal-stage { width: min(22vh, 66vw); }
+  .phase-awarded .medal-stage { width: min(36vmin, 96vw); }
   .masthead .sub { font-size: 12.5px; }
 }
 
 /* ------- narrow screens: struck medal gets inspection size; the docket compacts ------- */
 @media (max-width: 980px) {
-  .phase-awarded .medal-stage { width: min(52vmin, 96vw); }
+  .phase-awarded .medal-stage { width: min(62vmin, 96vw); }
+  .phase-striking .medal-stage {
+    transform: scale(1.06);
+    transition: transform 500ms var(--ease-drawer);
+  }
   .petition { gap: 5px; padding: 10px 20px; }
   .medal-stage { width: min(40vmin, 400px); }
   .field-tag { font-size: 11.5px; margin-bottom: 2px; }
