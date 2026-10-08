@@ -1,5 +1,5 @@
 import type { Award } from '../lib/award'
-import { CATEGORIES, citation, ceremonyDate } from '../lib/award'
+import { CATEGORIES, citation, ceremonyDate, awardYear } from '../lib/award'
 
 // The parchment diploma. Unfurl is a clip-path wipe with a moving
 // curl-shadow; the citation letterpresses in line by line.
@@ -14,14 +14,16 @@ export function Diploma({ award, animate }: { award: Award; animate: boolean }) 
       <div className="diploma-inner">
         <header className="dip-head">
           <div className="dip-board">The Committee for Extremely Specific Achievement</div>
-          <div className="dip-doc">Diploma</div>
+          <h2 className="dip-doc" data-focus="diploma" tabIndex={-1}>
+            Diploma
+          </h2>
         </header>
         <p className="dip-line dip-l1">having deliberated at length, and finding the claim sound,</p>
         <p className="dip-line dip-l2">
           hereby confers upon <span className="dip-who">{who}</span>
         </p>
         <p className="dip-line dip-l3">
-          the {new Date(award.dateISO).getFullYear()} Prize in {CATEGORIES[award.category].label},
+          the {awardYear(award.dateISO)} Prize in {CATEGORIES[award.category].label},
         </p>
         <p className="dip-line dip-cite">{citation(award)},</p>
         <p className="dip-line dip-l4">with all the rights and honours thereunto appertaining.</p>

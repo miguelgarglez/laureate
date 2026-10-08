@@ -56,7 +56,7 @@ export function Guide({ step, onSkip }: Props) {
       <div
         className="guide-shade"
         style={{
-          clipPath: `polygon(0% 0%, 0% 100%, 100% 100%, 100% 0%, 0% 0%,
+          clipPath: `polygon(evenodd, 0% 0%, 0% 100%, 100% 100%, 100% 0%, 0% 0%,
             ${hole.left}px ${hole.top}px, ${hole.left}px ${hole.top + hole.height}px,
             ${hole.left + hole.width}px ${hole.top + hole.height}px, ${hole.left + hole.width}px ${hole.top}px,
             ${hole.left}px ${hole.top}px)`,

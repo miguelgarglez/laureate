@@ -2,7 +2,7 @@
 // back = recipient engraving), composited by drawMedal with emboss reveal,
 // flip-spin and lamplight sheen. Pure canvas — no images, no assets.
 
-import { CATEGORIES, citation } from './award'
+import { CATEGORIES, citation, awardYear, roman } from './award'
 import type { Award } from './award'
 
 const GOLD_HI = '#eccf7d'
@@ -287,7 +287,7 @@ function renderFront(award: Award, size: number): HTMLCanvasElement {
   // bottom legend
   ctx.font = `${size * 0.05}px "IM Fell English SC", serif`
   ctx.fillStyle = GOLD_DEEP
-  ctx.fillText('· MMXXVI ·', 0, r * 0.78)
+  ctx.fillText(`· ${roman(awardYear(award.dateISO))} ·`, 0, r * 0.78)
 
   return c
 }
@@ -424,8 +424,8 @@ export class MedalRenderer {
         wg.addColorStop(1, 'rgba(236,207,125,0)')
         ctx.fillStyle = wg
         ctx.beginPath()
-        arc(ctx, 0, 0, wf + r * 0.02)
-        arc(ctx, 0, 0, Math.max(0, wf - r * 0.05))
+        ctx.arc(0, 0, wf + r * 0.02, 0, Math.PI * 2)
+        ctx.arc(0, 0, Math.max(0.01, wf - r * 0.05), 0, Math.PI * 2)
         ctx.fill('evenodd')
       }
     }
@@ -460,5 +460,5 @@ export class MedalRenderer {
 export function medalShareText(award: Award): string {
   const c = citation(award)
   const who = award.recipient || 'the bearer'
-  return `The Committee for Extremely Specific Achievement has conferred upon ${who} the ${new Date(award.dateISO).getFullYear()} Prize in ${CATEGORIES[award.category].label}, ${c}. Medal No. ${award.serial}.`
+  return `The Committee for Extremely Specific Achievement has conferred upon ${who} the ${awardYear(award.dateISO)} Prize in ${CATEGORIES[award.category].label}, ${c}. Medal No. ${award.serial}.`
 }

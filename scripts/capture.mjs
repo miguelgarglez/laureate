@@ -27,7 +27,7 @@ await p.waitForTimeout(4200)
 await p.screenshot({ path: 'docs/hero.png' })
 
 // strike mid-flight
-await p.click('.slink-dim') // mint another
+await p.click('button:has-text("Mint another")')
 await p.waitForTimeout(600)
 await p.fill('.ach-input', 'remembering the password on the first try')
 await p.click('.press')

@@ -13,19 +13,36 @@ import { shimmer, thunk } from './lib/sfx'
 
 const STRIKE_MS = 1700
 
+const soundPref = () => {
+  try {
+    return localStorage.getItem('laureate.sound') === '1'
+  } catch {
+    return false
+  }
+}
+
 function OgMode() {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    const award = mint({
-      recipient: 'the bearer',
-      achievement: 'exemplary silence in a meeting that could have been an email',
-      category: 'peace',
-      dateISO: '2026-10-08',
+    let cancelled = false
+    const el = ref.current!
+    document.fonts.ready.then(() => {
+      if (cancelled) return
+      const award = mint({
+        recipient: 'the bearer',
+        achievement: 'exemplary silence in a meeting that could have been an email',
+        category: 'peace',
+        dateISO: '2026-10-08',
+      })
+      const card = renderCard(award)
+      card.style.width = '1200px'
+      card.style.height = '630px'
+      el.appendChild(card)
     })
-    const card = renderCard(award)
-    card.style.width = '1200px'
-    card.style.height = '630px'
-    ref.current!.appendChild(card)
+    return () => {
+      cancelled = true
+      el.innerHTML = ''
+    }
   }, [])
   return <div ref={ref} style={{ width: 1200, height: 630 }} />
 }
@@ -42,22 +59,54 @@ export default function App() {
   const [achievement, setAchievement] = useState('')
   const [category, setCategory] = useState<Category>('peace')
   const [strikeKey, setStrikeKey] = useState(0)
-  const [soundOn, setSoundOn] = useState(() => {
-    try {
-      return localStorage.getItem('laureate.sound') === '1'
-    } catch {
-      return false
-    }
-  })
+  const [flipNudge, setFlipNudge] = useState(0)
+  const [soundOn, setSoundOn] = useState(soundPref)
   const [showGuide, setShowGuide] = useState(() => !guideSeen())
-  const [reduced] = useState(
+  const [reduced, setReduced] = useState(
     () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches,
   )
   const stageRef = useRef<HTMLDivElement>(null)
   const flipFrom = useRef<DOMRect | null>(null)
+  const ceremonyTimer = useRef<number>(0)
 
   // OG render mode (?og) — used by the capture script only
   const og = new URLSearchParams(location.search).has('og')
+
+  // live motion preference
+  useEffect(() => {
+    const mq = matchMedia('(prefers-reduced-motion: reduce)')
+    const on = () => setReduced(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
+
+  // hash navigation: follow permalink changes without a reload
+  useEffect(() => {
+    const onHash = () => {
+      clearTimeout(ceremonyTimer.current)
+      if (!location.hash.startsWith('#a=')) {
+        setBadHash(false)
+        setAward(null)
+        setPhase('idle')
+        return
+      }
+      const a = decodeAward(location.hash)
+      if (a) {
+        flipFrom.current = stageRef.current?.getBoundingClientRect() ?? null
+        setAward(a)
+        setPhase('awarded')
+        setBadHash(false)
+      } else {
+        setAward(null)
+        setPhase('idle')
+        setBadHash(true)
+      }
+    }
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
+
+  useEffect(() => () => clearTimeout(ceremonyTimer.current), [])
 
   // FLIP the medal when the layout swaps columns on award
   useEffect(() => {
@@ -69,7 +118,7 @@ export default function App() {
     const dx = from.left + from.width / 2 - (now.left + now.width / 2)
     const dy = from.top + from.height / 2 - (now.top + now.height / 2)
     const s = from.width / now.width
-    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return
+    if (Math.abs(dx) < 1 && Math.abs(dy) < 1 && Math.abs(s - 1) < 0.01) return
     el.style.transition = 'none'
     el.style.transform = `translate(${dx}px,${dy}px) scale(${s})`
     requestAnimationFrame(() => {
@@ -78,36 +127,48 @@ export default function App() {
     })
   }, [phase, award, reduced])
 
+  // move focus to the outcome when the ceremony completes
+  useEffect(() => {
+    if (phase !== 'awarded') return
+    const t = setTimeout(
+      () => document.querySelector<HTMLElement>('[data-focus="diploma"]')?.focus(),
+      reduced ? 60 : 900,
+    )
+    return () => clearTimeout(t)
+  }, [phase, award, reduced])
+
   const onMint = useCallback(() => {
     if (phase === 'striking') return
-    flipFrom.current = stageRef.current?.getBoundingClientRect() ?? null
     const a = mint({ recipient, achievement, category })
     setAward(a)
     setPhase('striking')
     setStrikeKey((k) => k + 1)
+    setFlipNudge(0)
     history.replaceState(null, '', '#a=' + encodeAward(a))
     setShowGuide(false)
     markGuideSeen()
-    setTimeout(() => {
+    ceremonyTimer.current = window.setTimeout(() => {
       flipFrom.current = stageRef.current?.getBoundingClientRect() ?? null
       setPhase('awarded')
-      shimmer(soundOn)
+      shimmer(soundPref())
     }, reduced ? 300 : STRIKE_MS)
-  }, [phase, recipient, achievement, category, soundOn, reduced])
+  }, [phase, recipient, achievement, category, reduced])
 
   const onContact = useCallback(() => {
-    thunk(soundOn)
+    thunk(soundPref())
     try {
       navigator.vibrate?.(30)
     } catch { /* unsupported */ }
-  }, [soundOn])
+  }, [])
 
   const onReset = useCallback(() => {
     flipFrom.current = stageRef.current?.getBoundingClientRect() ?? null
     setPhase('idle')
     setAward(null)
     setAchievement('')
+    setFlipNudge(0)
     history.replaceState(null, '', location.pathname)
+    requestAnimationFrame(() => document.querySelector<HTMLElement>('.ach-input')?.focus())
   }, [])
 
   const toggleSound = () => {
@@ -120,6 +181,13 @@ export default function App() {
 
   const guideStep = showGuide ? (achievement.trim().length >= 3 ? 1 : 0) : 2
 
+  const statusText =
+    phase === 'striking'
+      ? 'The press is striking your medal.'
+      : phase === 'awarded' && award
+        ? 'The medal is struck. Your diploma is ready.'
+        : ''
+
   if (og) return <OgMode />
 
   return (
@@ -129,6 +197,10 @@ export default function App() {
         <p className="sub">The Committee for Extremely Specific Achievement</p>
       </header>
 
+      <p className="vh" aria-live="polite">
+        {statusText}
+      </p>
+
       <main className="main">
         <div className="stage-col" ref={stageRef}>
           <div className={`ribbon-drop ${phase === 'awarded' ? 'ribbon-on' : ''}`} aria-hidden="true" />
@@ -136,11 +208,20 @@ export default function App() {
             award={award}
             phase={phase}
             strikeKey={strikeKey}
+            flipNudge={flipNudge}
             onStrikeMoment={onContact}
             reducedMotion={reduced}
           />
           {phase === 'awarded' && (
-            <p className="drag-hint">The medal takes a spin — drag it.</p>
+            <div className="stage-hints">
+              {!reduced && <p className="drag-hint">The medal takes a spin — drag it.</p>}
+              <button
+                className="slink slink-dim flip-btn"
+                onClick={() => setFlipNudge((n) => n + 1)}
+              >
+                Turn it over
+              </button>
+            </div>
           )}
         </div>
 

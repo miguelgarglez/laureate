@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { CATEGORY_ORDER, CATEGORIES, GHOST_EXAMPLES } from '../lib/award'
+import { CATEGORY_ORDER, CATEGORIES, GHOST_EXAMPLES, petitionOk } from '../lib/award'
 import type { Category } from '../lib/award'
 import { tick } from '../lib/sfx'
 
@@ -23,7 +23,7 @@ export function CommitteeForm(p: Props) {
     return () => clearInterval(ghostTimer.current)
   }, [])
 
-  const ready = p.achievement.trim().length >= 3
+  const ready = petitionOk(p.achievement)
 
   return (
     <form

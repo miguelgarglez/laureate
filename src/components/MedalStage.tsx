@@ -31,25 +31,30 @@ interface Props {
   award: Award | null
   phase: StagePhase
   strikeKey: number // increments per strike
+  flipNudge: number // increments to flip the medal to its other face
   onStrikeMoment?: () => void // fires at contact — sfx/vibrate hook
   reducedMotion: boolean
 }
 
 interface Mote { x: number; y: number; r: number; vx: number; vy: number; a: number }
 
-export function MedalStage({ award, phase, strikeKey, onStrikeMoment, reducedMotion }: Props) {
+export function MedalStage({ award, phase, strikeKey, flipNudge, onStrikeMoment, reducedMotion }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const state = useRef({
     flip: 0,
     flipVel: 0,
+    flipAnim: null as { from: number; to: number; t0: number } | null,
     sheenX: 0,
     sheenY: -0.4,
     sheenTX: 0,
     sheenTY: -0.4,
     dragging: false,
+    dragPointer: -1,
     lastX: 0,
     lastT: 0,
+    lastMoveT: 0,
+    lastNudge: 0,
     struck: false,
     pressY: -1300, // bottom edge of the press head in centered canvas units; -1300 = offscreen
     shock: -1,
@@ -90,7 +95,7 @@ export function MedalStage({ award, phase, strikeKey, onStrikeMoment, reducedMot
       renderer.draw(ctx, {
         award: phase === 'idle' ? null : award,
         emboss: phase === 'idle' ? 0 : 1,
-        flip: 0,
+        flip: Math.PI * (flipNudge % 2),
         sheenX: 0,
         sheenY: -0.4,
       })
@@ -98,7 +103,7 @@ export function MedalStage({ award, phase, strikeKey, onStrikeMoment, reducedMot
     }
     draw()
     document.fonts.ready.then(draw)
-  }, [reducedMotion, phase, award, strikeKey])
+  }, [reducedMotion, phase, award, strikeKey, flipNudge])
 
   useEffect(() => {
     if (reducedMotion) return
@@ -152,8 +157,22 @@ export function MedalStage({ award, phase, strikeKey, onStrikeMoment, reducedMot
       }
       s.prevPhase = phase
 
+      // programmatic flip: ease exactly one half-turn to the other face
+      if (flipNudge !== s.lastNudge) {
+        s.lastNudge = flipNudge
+        if (!s.dragging && phase !== 'idle') {
+          const base = s.flip % (Math.PI * 2)
+          s.flipAnim = { from: s.flip - base, to: s.flip - base + Math.PI, t0: now }
+          s.flipVel = 0
+        }
+      }
+      if (s.flipAnim && !s.dragging) {
+        const t = clamp01((now - s.flipAnim.t0) / 550)
+        s.flip = s.flipAnim.from + (s.flipAnim.to - s.flipAnim.from) * easeOutQuart(t)
+        if (t >= 1) s.flipAnim = null
+      }
       // spin physics
-      if (!s.dragging) {
+      if (!s.dragging && !s.flipAnim) {
         s.flip += s.flipVel * dt
         s.flipVel *= Math.pow(0.9985, dt)
         if (Math.abs(s.flipVel) < 0.00001) s.flipVel = 0
@@ -252,7 +271,7 @@ export function MedalStage({ award, phase, strikeKey, onStrikeMoment, reducedMot
     raf = requestAnimationFrame(loop)
     document.fonts.ready.then(() => renderer.refreshFonts())
     return () => cancelAnimationFrame(raf)
-  }, [phase, strikeKey, award, reducedMotion, onStrikeMoment])
+  }, [phase, strikeKey, award, reducedMotion, onStrikeMoment, flipNudge])
 
   // pointer interaction: tilt sheen always; drag-spin when awarded
   useEffect(() => {
@@ -269,39 +288,60 @@ export function MedalStage({ award, phase, strikeKey, onStrikeMoment, reducedMot
       const p = toLocal(e)
       s.sheenTX = Math.max(-1, Math.min(1, p.x))
       s.sheenTY = Math.max(-1, Math.min(1, p.y))
-      if (s.dragging) {
+      if (s.dragging && e.pointerId === s.dragPointer) {
         const dx = e.clientX - s.lastX
+        const dt = Math.max(1, e.timeStamp - s.lastMoveT)
         s.lastX = e.clientX
+        s.lastMoveT = e.timeStamp
         const dv = dx * 0.012
         s.flip += dv
-        s.flipVel = dv / Math.max(1, 16) // approx per-frame to per-ms
+        s.flipVel = dv / dt // per-ms, consistent with the rAF loop
       }
     }
     const down = (e: PointerEvent) => {
+      if (e.button !== 0 || s.dragging || reducedMotion) return
       const p = toLocal(e)
       if (Math.hypot(p.x, p.y) < 1.1 && phase === 'awarded') {
         s.dragging = true
+        s.dragPointer = e.pointerId
         s.lastX = e.clientX
+        s.lastMoveT = e.timeStamp
         s.flipVel = 0
+        s.flipAnim = null
         el.setPointerCapture(e.pointerId)
       }
     }
-    const up = () => { s.dragging = false }
+    const up = (e: PointerEvent) => {
+      if (e.pointerId !== s.dragPointer) return
+      s.dragging = false
+      s.dragPointer = -1
+    }
     el.addEventListener('pointermove', move)
     el.addEventListener('pointerdown', down)
     el.addEventListener('pointerup', up)
     el.addEventListener('pointercancel', up)
+    el.addEventListener('lostpointercapture', up)
     return () => {
+      s.dragging = false
+      s.dragPointer = -1
       el.removeEventListener('pointermove', move)
       el.removeEventListener('pointerdown', down)
       el.removeEventListener('pointerup', up)
       el.removeEventListener('pointercancel', up)
+      el.removeEventListener('lostpointercapture', up)
     }
-  }, [phase])
+  }, [phase, reducedMotion])
+
+  const canvasLabel =
+    phase === 'idle'
+      ? 'A blank gold planchet waiting under the press'
+      : award
+        ? `A gold medal struck for ${award.recipient || 'the bearer'}`
+        : 'The medal'
 
   return (
-    <div ref={wrapRef} className="medal-stage" aria-label="The medal">
-      <canvas ref={canvasRef} width={1024} height={1024} />
+    <div ref={wrapRef} className="medal-stage">
+      <canvas ref={canvasRef} width={1024} height={1024} role="img" aria-label={canvasLabel} />
     </div>
   )
 }

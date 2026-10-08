@@ -2,28 +2,57 @@
 // parchment citation and serial. Reused for the OG image (via ?og mode).
 
 import type { Award } from './award'
-import { CATEGORIES, citation, ceremonyDate } from './award'
+import { CATEGORIES, citation, ceremonyDate, awardYear } from './award'
 import { MedalRenderer } from './medal'
 
 export const CARD_W = 1200
 export const CARD_H = 630
 
-function wrap(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxW: number, lh: number) {
+function wrap(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxW: number,
+  lh: number,
+  maxY = Infinity,
+): number {
+  // split words; a single word wider than maxW is broken by character
   const words = text.split(' ')
+  const pieces: string[] = []
+  for (const w of words) {
+    if (ctx.measureText(w).width <= maxW) {
+      pieces.push(w)
+      continue
+    }
+    let cur = ''
+    for (const ch of w) {
+      if (ctx.measureText(cur + ch).width > maxW && cur) {
+        pieces.push(cur)
+        cur = ch
+      } else cur += ch
+    }
+    if (cur) pieces.push(cur)
+  }
   let line = ''
   let yy = y
-  for (const w of words) {
-    const try_ = line ? line + ' ' + w : w
+  const flush = () => {
+    ctx.fillText(line, x, yy)
+    yy += lh
+    line = ''
+  }
+  for (const p of pieces) {
+    const try_ = line ? line + ' ' + p : p
     if (ctx.measureText(try_).width > maxW && line) {
-      ctx.fillText(line, x, yy)
-      yy += lh
-      line = w
+      flush()
+      if (yy > maxY) return yy
+      line = p
     } else {
       line = try_
     }
   }
-  if (line) ctx.fillText(line, x, yy)
-  return yy + lh
+  if (line) flush()
+  return yy
 }
 
 export function renderCard(award: Award): HTMLCanvasElement {
@@ -70,11 +99,43 @@ export function renderCard(award: Award): HTMLCanvasElement {
   ctx.lineTo(CARD_W - 90, 190)
   ctx.stroke()
 
-  ctx.font = 'italic 26px "EB Garamond", serif'
   ctx.fillStyle = '#241d12'
   const who = award.recipient || 'the bearer'
-  const text = `Hereby conferred upon ${who} the ${new Date(award.dateISO).getFullYear()} Prize in ${CATEGORIES[award.category].label}, ${citation(award)}.`
-  const end = wrap(ctx, text, x, 240, CARD_W - x - 90, 38)
+  const text = `Hereby conferred upon ${who} the ${awardYear(award.dateISO)} Prize in ${CATEGORIES[award.category].label}, ${citation(award)}.`
+  // shrink the citation until it fits the reserved column height
+  const citeMaxW = CARD_W - x - 90
+  const citeBottom = 440
+  // measure lines per candidate size, then draw once at the size that fits
+  let size = 26
+  for (; size >= 16; size -= 2) {
+    ctx.font = `italic ${size}px "EB Garamond", serif`
+    let lines = 0
+    let line = ''
+    const words = text.split(' ')
+    const measure = (t: string) => ctx.measureText(t).width
+    const pieces: string[] = []
+    for (const w of words) {
+      if (measure(w) <= citeMaxW) pieces.push(w)
+      else {
+        let cur = ''
+        for (const ch of w) {
+          if (measure(cur + ch) > citeMaxW && cur) { pieces.push(cur); cur = ch }
+          else cur += ch
+        }
+        if (cur) pieces.push(cur)
+      }
+    }
+    for (const p of pieces) {
+      const t = line ? line + ' ' + p : p
+      if (measure(t) > citeMaxW && line) { lines++; line = p } else line = t
+    }
+    if (line) lines++
+    if (240 + lines * (size + 12) <= citeBottom) break
+  }
+  size = Math.max(size, 16)
+  ctx.font = `italic ${size}px "EB Garamond", serif`
+  const lh = size + 12
+  const end = wrap(ctx, text, x, 240, citeMaxW, lh, citeBottom + lh)
 
   ctx.font = '17px "IM Fell English SC", serif'
   ctx.fillStyle = '#5a4a2e'

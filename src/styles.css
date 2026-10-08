@@ -29,6 +29,16 @@ body {
 }
 
 button { font-family: inherit; }
+
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 :focus-visible {
   outline: 2px solid var(--gold-hi);
   outline-offset: 3px;
@@ -132,13 +142,24 @@ button { font-family: inherit; }
 }
 .ribbon-on { translate: -50% 0; rotate: 0.5deg; opacity: 1; }
 
+.stage-hints {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: -4px;
+}
 .drag-hint {
   font-family: 'IM Fell English', serif;
   font-style: italic;
   font-size: 15px;
   color: rgba(240, 230, 205, 0.5);
-  margin-top: -4px;
   animation: fade-up 500ms var(--ease-out) 1.2s both;
+}
+.flip-btn {
+  padding: 5px 12px;
+  font-size: 11.5px;
+  animation: fade-up 500ms var(--ease-out) 1.35s both;
 }
 
 .side-col {
@@ -317,6 +338,7 @@ button { font-family: inherit; }
 }
 .dip-doc {
   font-family: 'IM Fell English SC', serif;
+  font-weight: 400;
   font-size: clamp(24px, 3vw, 32px);
   letter-spacing: 0.3em;
   color: var(--ink);
@@ -337,11 +359,13 @@ button { font-family: inherit; }
   letter-spacing: 0.04em;
   border-bottom: 1px solid rgba(25, 21, 16, 0.5);
   padding-bottom: 1px;
+  overflow-wrap: anywhere;
 }
 .dip-l3 { font-size: 17px; margin-top: 6px; font-variant: small-caps; letter-spacing: 0.05em; }
 .dip-cite {
   font-family: 'IM Fell English', serif;
   font-style: italic;
+  overflow-wrap: anywhere;
   font-size: clamp(17px, 1.8vw, 20px);
   margin-top: 10px;
   color: #241d12;
@@ -496,7 +520,7 @@ button { font-family: inherit; }
 
 /* ------- guide ------- */
 
-.guide { position: fixed; inset: 0; z-index: 40; }
+.guide { position: fixed; inset: 0; z-index: 40; pointer-events: none; }
 .guide-shade {
   position: absolute;
   inset: 0;
@@ -519,6 +543,7 @@ button { font-family: inherit; }
 }
 .guide-card {
   position: absolute;
+  pointer-events: auto;
   width: 300px;
   background: linear-gradient(168deg, #f0e6cd, #e4d5b0);
   color: var(--ink);

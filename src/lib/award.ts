@@ -99,11 +99,17 @@ export function hashString(s: string): number {
   return h >>> 0
 }
 
-function normaliseAchievement(raw: string): string {
+export function normaliseAchievement(raw: string): string {
   let a = raw.trim().replace(/\s+/g, ' ')
   a = a.replace(/[.\s]+$/, '')
   if (/^for\s+/i.test(a)) a = a.slice(4)
   return a.charAt(0).toLowerCase() + a.slice(1)
+}
+
+// The same bar the codec applies: a minted award must decode again.
+export function petitionOk(raw: string): boolean {
+  const a = normaliseAchievement(raw)
+  return a.length >= 3 && a.length <= 140
 }
 
 export function mint(raw: {
@@ -112,8 +118,8 @@ export function mint(raw: {
   category: Category
   dateISO?: string
 }): Award {
-  const achievement = normaliseAchievement(raw.achievement)
-  const recipient = raw.recipient.trim().replace(/\s+/g, ' ')
+  const achievement = normaliseAchievement(raw.achievement).slice(0, 140)
+  const recipient = raw.recipient.trim().replace(/\s+/g, ' ').slice(0, 40)
   const serial = 1000 + (hashString(`${recipient}|${achievement}|${raw.category}`) % 9000)
   return {
     recipient,
@@ -127,7 +133,7 @@ export function mint(raw: {
 export function citation(award: Award): string {
   const pool = TEMPLATES[award.category]
   const t = pool[award.serial % pool.length]
-  return t.replace('{a}', award.achievement)
+  return t.replace('{a}', () => award.achievement)
 }
 
 const ROMAN: [number, string][] = [
@@ -137,6 +143,8 @@ const ROMAN: [number, string][] = [
 ]
 
 export function roman(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return ''
+  n = Math.min(Math.floor(n), 3999)
   let out = ''
   for (const [v, s] of ROMAN) while (n >= v) { out += s; n -= v }
   return out
@@ -158,7 +166,14 @@ const ORDINAL = [
 
 export function ceremonyDate(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number)
-  return `this ${ORDINAL[d - 1]} day of ${MONTHS[m - 1]}, ${roman(y)}`
+  const month = MONTHS[m - 1] ?? 'December'
+  const day = ORDINAL[d - 1] ?? 'first'
+  return `this ${day} day of ${month}, ${roman(y) || 'MMXXVI'}`
+}
+
+export function awardYear(iso: string): number {
+  const y = Number(iso.slice(0, 4))
+  return Number.isInteger(y) ? y : 2026
 }
 
 // URL codec — the whole award in the hash, so every medal is a permalink.
@@ -170,15 +185,23 @@ export function encodeAward(a: Award): string {
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
+const VALID_DATE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/
+
 export function decodeAward(hash: string): Award | null {
   try {
+    if (hash.length > 2000) return null
     const b64 = hash.replace(/^#a=/, '').replace(/-/g, '+').replace(/_/g, '/')
-    const [recipient, achievement, category, serial, dateISO] = JSON.parse(
-      decodeURIComponent(escape(atob(b64))),
-    )
-    if (!CATEGORIES[category as Category] || typeof serial !== 'number') return null
-    if (typeof achievement !== 'string' || !achievement) return null
-    return { recipient: recipient ?? '', achievement, category, serial, dateISO }
+    const parsed: unknown = JSON.parse(decodeURIComponent(escape(atob(b64))))
+    if (!Array.isArray(parsed) || parsed.length !== 5) return null
+    const [recipient, achievement, category, serial, dateISO] = parsed
+    if (typeof recipient !== 'string' || recipient.length > 40) return null
+    if (typeof achievement !== 'string' || !achievement || achievement.length > 140) return null
+    if (typeof category !== 'string' || !Object.hasOwn(CATEGORIES, category)) return null
+    if (!Number.isInteger(serial) || serial < 1000 || serial > 9999) return null
+    if (typeof dateISO !== 'string' || !VALID_DATE.test(dateISO)) return null
+    const year = Number(dateISO.slice(0, 4))
+    if (year < 1900 || year > 2200) return null
+    return { recipient, achievement, category: category as Category, serial, dateISO }
   } catch {
     return null
   }

@@ -14,7 +14,7 @@ Laureate is a tiny minting ceremony that runs entirely in your browser. State an
 
 The medal is drawn procedurally on canvas — no image assets. Both faces are pre-rendered to offscreen canvases: the front composes a radial-lit gold disc, rim lettering along a text arc, paired laurel branches, and a category emblem; the back engraves the recipient, serial and year. The strike reveals the relief through a radial emboss wavefront masked by `clip()`, so the design appears to be pressed into the metal rather than faded in.
 
-The fun technical detail: awards are deterministic. `mint()` hashes the petition (recipient + achievement + category) with a small FNV-style hash, so the same petition always produces the same serial number and the same medal. Permalinks encode the award in the URL hash with a compact JSON + base64 codec, so a shared link re-mints the identical award on any machine — nothing is stored anywhere.
+The fun technical detail: awards are deterministic. `mint()` hashes the normalised petition (recipient + achievement + category) with a small FNV-style hash, so the same petition always selects the same serial number and citation; the mint date is captured once and stored in the award itself. Permalinks encode the whole award in the URL hash with a compact JSON + base64url codec, so a shared link re-mints the identical award — same serial, same engraving — on any machine. No server, no database: the award lives in the URL, and only your sound/guide preferences sit in `localStorage`.
 
 ## Local run
 
