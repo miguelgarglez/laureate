@@ -4,7 +4,7 @@
 
 **Mint a Nobel-style gold medal and diploma for anyone's absurd achievement.**
 
-**Live:** https://laureate.vercel.app
+**Live:** https://laureate-ivory.vercel.app
 
 ## What it does
 
