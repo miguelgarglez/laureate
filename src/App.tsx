@@ -66,6 +66,7 @@ export default function App() {
   const stageRef = useRef<HTMLDivElement>(null)
   const sideRef = useRef<HTMLDivElement>(null)
   const flipFrom = useRef<DOMRect | null>(null)
+  const ghostFrom = useRef<DOMRect | null>(null)
   const ceremonyTimer = useRef<number>(0)
   // one ceremony at a time: a generation counter rejects orphan callbacks,
   // and a synchronous ref blocks a second submit in the same event turn
@@ -148,15 +149,36 @@ export default function App() {
   // and retire the petition ghost once the paper reveal covers it
   useEffect(() => {
     if (phase !== 'awarded') return
-    // the ghost masks against the diploma's real height — measure both once laid out
+    // pin the ghost to the diploma's exact box, seed its clip variables,
+    // and travel it from the petition's measured rect to that box
     const raf = requestAnimationFrame(() => {
       const dip = sideRef.current?.querySelector<HTMLElement>('.diploma')
       const ghost = sideRef.current?.querySelector<HTMLElement>('.docket-ghost')
       if (dip && ghost && sideRef.current) {
+        ghost.style.left = `${dip.offsetLeft}px`
+        ghost.style.width = `${dip.offsetWidth}px`
+        sideRef.current.style.setProperty('--dip-h', `${dip.offsetHeight}px`)
+        sideRef.current.style.setProperty('--ghost-h', `${ghost.offsetHeight}px`)
         sideRef.current.style.setProperty(
           '--ghost-clip',
           `${Math.max(0, ghost.offsetHeight - dip.offsetHeight)}px`,
         )
+      }
+      const from = ghostFrom.current
+      ghostFrom.current = null
+      if (ghost && from && !reduced) {
+        const now = ghost.getBoundingClientRect()
+        const dx = from.left + from.width / 2 - (now.left + now.width / 2)
+        const dy = from.top + from.height / 2 - (now.top + now.height / 2)
+        const sx = from.width / now.width
+        const sy = from.height / now.height
+        ghost.style.transformOrigin = '50% 50%'
+        ghost.style.transition = 'none'
+        ghost.style.transform = `translate(${dx}px,${dy}px) scale(${sx},${sy})`
+        requestAnimationFrame(() => {
+          ghost.style.transition = 'transform 480ms cubic-bezier(0.32, 0.72, 0, 1)'
+          ghost.style.transform = 'none'
+        })
       }
     })
     const focusT = setTimeout(
@@ -200,6 +222,10 @@ export default function App() {
         mintBusy.current = false
         setPending(false)
         flipFrom.current = stageRef.current?.getBoundingClientRect() ?? null
+        // the petition must not teleport: remember its screen rect so the
+        // ghost can hold that position and travel into the diploma slot
+        ghostFrom.current =
+          document.querySelector<HTMLElement>('.petition')?.getBoundingClientRect() ?? null
         setPhase('awarded')
         shimmer(soundPref())
       }, reduced ? 300 : STRIKE_MS)
@@ -314,18 +340,20 @@ export default function App() {
             <>
               {!paperGone && (
                 <div className="docket-ghost" inert aria-hidden="true">
-                  <CommitteeForm
-                    recipient={recipient}
-                    achievement={achievement}
-                    category={category}
-                    setRecipient={setRecipient}
-                    setAchievement={setAchievement}
-                    setCategory={setCategory}
-                    onMint={onMint}
-                    onToggleSound={toggleSound}
-                    busy
-                    soundOn={soundOn}
-                  />
+                  <div className="docket-ghost-paper">
+                    <CommitteeForm
+                      recipient={recipient}
+                      achievement={achievement}
+                      category={category}
+                      setRecipient={setRecipient}
+                      setAchievement={setAchievement}
+                      setCategory={setCategory}
+                      onMint={onMint}
+                      onToggleSound={toggleSound}
+                      busy
+                      soundOn={soundOn}
+                    />
+                  </div>
                 </div>
               )}
               <Diploma award={award} animate={!reduced} />

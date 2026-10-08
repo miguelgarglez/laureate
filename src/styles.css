@@ -208,28 +208,38 @@ button { font-family: inherit; }
   pointer-events: none;
 }
 
-/* the petition's ghost: still pinned over the slot at award mount.
-   The unfurling diploma consumes it from the bottom — the ghost's tail
-   clips away on the same progress curve as the roll, then it fades */
+/* the petition's ghost: pinned over the diploma's exact box at award
+   mount, travelled there from the petition's measured rect. Its visible
+   lower boundary is always the roll's revealed edge — the same eased
+   progress interpolates inset --ghost-h → --ghost-clip as opens the
+   paper, so petition content can never sit below the roll. The paper
+   rotation lives on .petition alone — no double tilt. */
 .docket-ghost {
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
-  opacity: 0.28;
-  transform: translateY(3px) rotate(-0.6deg);
+  width: min(480px, 94vw);
+  opacity: 0.3;
+  transform: translateY(3px);
   pointer-events: none;
-  overflow: hidden;
+}
+.docket-ghost-paper {
+  transform-origin: 50% 0;
   animation:
-    ghost-tuck 800ms var(--ease-drawer) 550ms both,
-    ghost-away 320ms ease 1150ms forwards;
+    ghost-gather 150ms ease-in 395ms both,
+    ghost-tuck 800ms var(--ease-drawer) 550ms forwards,
+    ghost-away 340ms ease 1180ms forwards;
+}
+/* the sheet rolls up into the scroll's start point just before it opens */
+@keyframes ghost-gather {
+  to { transform: scaleY(0.04); }
 }
 @keyframes ghost-tuck {
-  0% { clip-path: inset(0 0 0 0); }
+  0% { clip-path: inset(0 0 var(--ghost-h, 720px) 0); }
   60%, 100% { clip-path: inset(0 0 var(--ghost-clip, 110px) 0); }
 }
 @keyframes ghost-away {
-  to { opacity: 0; transform: translateY(8px) rotate(-0.6deg); }
+  to { opacity: 0; }
 }
 
 .petition {
